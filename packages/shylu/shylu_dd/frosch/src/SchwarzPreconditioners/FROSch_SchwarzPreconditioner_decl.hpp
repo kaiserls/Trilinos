@@ -54,6 +54,7 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+    //! Base class for all SchwarzPreconditioners. Mostly purely abstract/virtual functions.
     template <class SC = double,
               class LO = int,
               class GO = DefaultGlobalOrdinal,
@@ -84,6 +85,7 @@ namespace FROSch {
 
         using ParameterListPtr                    = RCP<ParameterList>;
 
+        using CombinedOperatorPtr                 = RCP<CombinedOperator<SC,LO,GO,NO> >;
         using SumOperatorPtr                      = RCP<SumOperator<SC,LO,GO,NO> >;
         using MultiplicativeOperatorPtr           = RCP<MultiplicativeOperator<SC,LO,GO,NO> >;
         using OverlappingOperatorPtr              = RCP<OverlappingOperator<SC,LO,GO,NO> >;

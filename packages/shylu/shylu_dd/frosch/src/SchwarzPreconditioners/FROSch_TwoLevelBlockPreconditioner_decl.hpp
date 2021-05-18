@@ -51,6 +51,7 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+    //! The TwoLevelBlockPreconditioner is ...
     template <class SC = double,
               class LO = int,
               class GO = DefaultGlobalOrdinal,

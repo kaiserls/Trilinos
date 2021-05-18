@@ -51,6 +51,7 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;    
 
+    //! A simple implementation of an SchwarzPreconditioner with one level.
     template <class SC = double,
               class LO = int,
               class GO = DefaultGlobalOrdinal,
@@ -69,6 +70,7 @@ namespace FROSch {
 
         using ParameterListPtr                  = typename SchwarzPreconditioner<SC,LO,GO,NO>::ParameterListPtr;
 
+        using CombinedOperatorPtr               = typename SchwarzPreconditioner<SC,LO,GO,NO>::CombinedOperatorPtr;
         using SumOperatorPtr                    = typename SchwarzPreconditioner<SC,LO,GO,NO>::SumOperatorPtr;
         using MultiplicativeOperatorPtr         = typename SchwarzPreconditioner<SC,LO,GO,NO>::MultiplicativeOperatorPtr;
         using OverlappingOperatorPtr            = typename SchwarzPreconditioner<SC,LO,GO,NO>::OverlappingOperatorPtr;
@@ -110,10 +112,9 @@ namespace FROSch {
 
         ConstXMatrixPtr K_;
 
-        SumOperatorPtr SumOperator_;
-        MultiplicativeOperatorPtr MultiplicativeOperator_;
-        OverlappingOperatorPtr OverlappingOperator_;
-        bool UseMultiplicative_ = false;
+        CombinedOperatorPtr CombinedOperator_;
+        OverlappingOperatorPtr OverlappingOperator_;//contained in sum/mult/combined operator, only really needed for multi-level
+        bool UseMultiplicative_ = false; //TODO: Remove, see two level preconditioner...
     };
 
 }
