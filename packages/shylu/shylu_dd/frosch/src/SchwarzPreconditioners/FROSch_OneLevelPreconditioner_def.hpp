@@ -67,7 +67,6 @@ namespace FROSch {
         }
         if (!this->ParameterList_->get("Level Combination","Additive").compare("Multiplicative")) {
             CombinedOperator_ = RCP<MultiplicativeOperator<SC,LO,GO,NO>>(new MultiplicativeOperator<SC,LO,GO,NO>(k,parameterList));
-            UseMultiplicative_ = true; // TODO: Remove, see below
         } else{
             CombinedOperator_ = RCP<SumOperator<SC,LO,GO,NO>>(new SumOperator<SC,LO,GO,NO>(k->getRangeMap()->getComm()));
         }

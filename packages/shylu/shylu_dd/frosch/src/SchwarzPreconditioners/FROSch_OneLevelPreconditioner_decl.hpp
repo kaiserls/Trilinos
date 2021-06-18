@@ -114,7 +114,6 @@ namespace FROSch {
 
         CombinedOperatorPtr CombinedOperator_;
         OverlappingOperatorPtr OverlappingOperator_;//contained in sum/mult/combined operator, only really needed for multi-level
-        bool UseMultiplicative_ = false; //TODO: Remove, see two level preconditioner...
     };
 
 }
