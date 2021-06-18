@@ -245,9 +245,7 @@ namespace FROSch {
     {
         FROSCH_DETAILTIMER_START_LEVELID(resetMatrixTime,"TwoLevelPreconditioner::resetMatrix");
         this->K_ = k;
-        this->OverlappingOperator_->resetMatrix(this->K_);
-        CoarseOperator_->resetMatrix(this->K_);
-        if (this->UseMultiplicative_) this->CombinedOperator_->resetMatrix(this->K_);
+        this->CombinedOperator_->resetMatrix(this->K_);
         return 0;
     }
 }
