@@ -60,7 +60,7 @@ namespace FROSch {
                                          SC alpha,
                                          SC beta) const
     {
-        FROSCH_TIMER_START_LEVELID(applyTime, getOperatorName()+"::apply");
+        FROSCH_TIMER_START_LEVELID(applyTime, "SumOperator::apply");
         if (this->OperatorVector_.size()>0) {
             if (this->XTmp_.is_null()) this->XTmp_ = MultiVectorFactory<SC,LO,GO,NO>::Build(x.getMap(),x.getNumVectors());
             *(this->XTmp_) = x; // Das brauche ich für den Fall das x=y
@@ -75,12 +75,6 @@ namespace FROSch {
         } else {
             y.update(alpha,x,beta);
         }
-    }
-
-    template <class SC,class LO,class GO,class NO>
-    string SumOperator<SC,LO,GO,NO>::getOperatorName() const
-    {
-        return "SumOperator";
     }
 }
 

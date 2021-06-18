@@ -68,9 +68,6 @@ namespace FROSch {
         using XMultiVector              = typename CombinedOperator<SC,LO,GO,NO>::XMultiVector;
         using XMultiVectorPtr           = typename CombinedOperator<SC,LO,GO,NO>::XMultiVectorPtr;
 
-        using XMatrixPtr                = typename SchwarzOperator<SC,LO,GO,NO>::XMatrixPtr;
-        using ConstXMatrixPtr           = typename SchwarzOperator<SC,LO,GO,NO>::ConstXMatrixPtr;
-
         using SchwarzOperatorPtr        = typename CombinedOperator<SC,LO,GO,NO>::SchwarzOperatorPtr;
         using SchwarzOperatorPtrVec     = typename CombinedOperator<SC,LO,GO,NO>::SchwarzOperatorPtrVec;
         using SchwarzOperatorPtrVecPtr  = typename CombinedOperator<SC,LO,GO,NO>::SchwarzOperatorPtrVecPtr;
@@ -83,14 +80,7 @@ namespace FROSch {
 
     public:
 
-        MultiplicativeOperator(ConstXMatrixPtr k,
-                               ParameterListPtr parameterList);
-
-        MultiplicativeOperator(ConstXMatrixPtr k,
-                               SchwarzOperatorPtrVecPtr operators,
-                               ParameterListPtr parameterList);
-
-        ~MultiplicativeOperator();
+        using CombinedOperator<SC,LO,GO,NO>::CombinedOperator;
 
         //! ???
         void preApplyCoarse(XMultiVector &x,
@@ -104,7 +94,6 @@ namespace FROSch {
                            SC beta=ScalarTraits<SC>::zero()) const;
 
     protected:
-        string getOperatorName() const;
         // Additional Temp Vector for apply()
         mutable XMultiVectorPtr YTmp_;
     };

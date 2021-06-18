@@ -65,6 +65,8 @@ namespace FROSch {
         using XMapPtr                   = typename SchwarzOperator<SC,LO,GO,NO>::XMapPtr;
         using ConstXMapPtr              = typename SchwarzOperator<SC,LO,GO,NO>::ConstXMapPtr;
 
+        using ConstXMatrixPtr           = typename SchwarzOperator<SC,LO,GO,NO>::ConstXMatrixPtr;
+
         using XMultiVector              = typename SchwarzOperator<SC,LO,GO,NO>::XMultiVector;
         using XMultiVectorPtr           = typename SchwarzOperator<SC,LO,GO,NO>::XMultiVectorPtr;
 
@@ -124,10 +126,11 @@ namespace FROSch {
         virtual void preApplyCoarse(XMultiVector &x,
                             XMultiVector &y);
 
-    protected:
-        //! Returns the name of the operator, for example "SumOperator" or "MultiplicativeOperator"
-        virtual string getOperatorName() const = 0;
+        //Reset matrix for the combined operator and all operators contained in the OperatorVector
+        virtual void resetMatrix(ConstXMatrixPtr &k);
 
+    protected:
+        //! Vector storing the operators for the different levels which are applied and combined
         SchwarzOperatorPtrVec OperatorVector_ = SchwarzOperatorPtrVec(0);
 
         //! Temp Vectors for apply()

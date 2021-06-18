@@ -86,9 +86,6 @@ namespace FROSch {
                            ETransp mode=NO_TRANS,
                            SC alpha=ScalarTraits<SC>::one(),
                            SC beta=ScalarTraits<SC>::zero()) const;
-    protected:
-        string getOperatorName() const;
-
     };
 }
 

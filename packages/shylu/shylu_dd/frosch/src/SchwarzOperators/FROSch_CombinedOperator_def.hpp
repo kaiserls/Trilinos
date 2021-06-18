@@ -55,14 +55,14 @@ namespace FROSch {
     CombinedOperator<SC,LO,GO,NO>::CombinedOperator(CommPtr comm) :
     SchwarzOperator<SC,LO,GO,NO> (comm)
     {
-        FROSCH_DETAILTIMER_START_LEVELID(combinedOperatorTime, getOperatorName()+"::"+getOperatorName());
+        FROSCH_DETAILTIMER_START_LEVELID(combinedOperatorTime, "CombinedOperator::CombinedOperator");
     }
 
     template <class SC,class LO,class GO,class NO>
     CombinedOperator<SC,LO,GO,NO>::CombinedOperator(SchwarzOperatorPtrVecPtr operators) :
     SchwarzOperator<SC,LO,GO,NO> (operators[0]->getRangeMap()->getComm())
     {
-        FROSCH_DETAILTIMER_START_LEVELID(combinedOperatorTime, getOperatorName()+"::"+getOperatorName());
+        FROSCH_DETAILTIMER_START_LEVELID(combinedOperatorTime, "CombinedOperator::CombinedOperator");
         FROSCH_ASSERT(operators.size()>0,"operators.size()<=0");
         OperatorVector_.push_back(operators[0]);
         for (unsigned i=1; i<operators.size(); i++) {
@@ -129,7 +129,7 @@ namespace FROSch {
     template <class SC,class LO,class GO,class NO>
     string CombinedOperator<SC,LO,GO,NO>::description() const
     {
-        string labelString = getOperatorName() + ": ";
+        string labelString = "CombinedOperator: ";
 
         for (UN i=0; i<OperatorVector_.size(); i++) {
             labelString += OperatorVector_[i]->description();
@@ -143,15 +143,15 @@ namespace FROSch {
     template <class SC,class LO,class GO,class NO>
     int CombinedOperator<SC,LO,GO,NO>::addOperator(SchwarzOperatorPtr op)
     {
-        FROSCH_DETAILTIMER_START_LEVELID(addOperatorTime, getOperatorName()+"::addOperator");
+        FROSCH_DETAILTIMER_START_LEVELID(addOperatorTime, "CombinedOperator::addOperator");
         int ret = 0;
         if (OperatorVector_.size()>0) {
             if (!op->getDomainMap()->isSameAs(*OperatorVector_[0]->getDomainMap())) {
-                if (this->Verbose_) cerr <<  getOperatorName()+"<SC,LO,GO,NO>::addOperator(SchwarzOperatorPtr op)\t\t!op->getDomainMap().isSameAs(OperatorVector_[0]->getDomainMap())\n";
+                if (this->Verbose_) cerr <<  "CombinedOperator<SC,LO,GO,NO>::addOperator(SchwarzOperatorPtr op)\t\t!op->getDomainMap().isSameAs(OperatorVector_[0]->getDomainMap())\n";
                 ret -= 1;
             }
             if (!op->getRangeMap()->isSameAs(*OperatorVector_[0]->getRangeMap())) {
-                if (this->Verbose_) cerr <<  getOperatorName()+"<SC,LO,GO,NO>::addOperator(SchwarzOperatorPtr op)\t\t!op->getRangeMap().isSameAs(OperatorVector_[0]->getRangeMap())\n";
+                if (this->Verbose_) cerr <<  "CombinedOperator<SC,LO,GO,NO>::addOperator(SchwarzOperatorPtr op)\t\t!op->getRangeMap().isSameAs(OperatorVector_[0]->getRangeMap())\n";
                 ret -= 10;
             }
             //FROSCH_ASSERT(op->OperatorDomainMap().SameAs(OperatorVector_[0]->OperatorDomainMap()),"The DomainMaps of the operators are not identical.");
@@ -165,7 +165,7 @@ namespace FROSch {
     template <class SC,class LO,class GO,class NO>
     int CombinedOperator<SC,LO,GO,NO>::addOperators(SchwarzOperatorPtrVecPtr operators)
     {
-        FROSCH_DETAILTIMER_START_LEVELID(addOperatorsTime, getOperatorName()+"::addOperators");
+        FROSCH_DETAILTIMER_START_LEVELID(addOperatorsTime, "CombinedOperator::addOperators");
         int ret = 0;
         for (UN i=1; i<operators.size(); i++) {
             if (0>addOperator(operators[i])) ret -= pow(10,i);
@@ -177,15 +177,15 @@ namespace FROSch {
     int CombinedOperator<SC,LO,GO,NO>::resetOperator(UN iD,
                                                 SchwarzOperatorPtr op)
     {
-        FROSCH_DETAILTIMER_START_LEVELID(resetOperatorTime, getOperatorName()+"::resetOperator");
+        FROSCH_DETAILTIMER_START_LEVELID(resetOperatorTime, "CombinedOperator::resetOperator");
         FROSCH_ASSERT(iD<OperatorVector_.size(),"iD exceeds the length of the OperatorVector_");
         int ret = 0;
         if (!op->getDomainMap().isSameAs(OperatorVector_[0]->getDomainMap())) {
-            if (this->Verbose_) cerr <<  getOperatorName()+"<SC,LO,GO,NO>::addOperator(SchwarzOperatorPtr op)\t\t!op->getDomainMap().isSameAs(OperatorVector_[0]->getDomainMap())\n";
+            if (this->Verbose_) cerr <<  "CombinedOperator<SC,LO,GO,NO>::addOperator(SchwarzOperatorPtr op)\t\t!op->getDomainMap().isSameAs(OperatorVector_[0]->getDomainMap())\n";
             ret -= 1;
         }
         if (!op->getRangeMap().isSameAs(OperatorVector_[0]->getRangeMap())) {
-            if (this->Verbose_) cerr <<  getOperatorName()+"<SC,LO,GO,NO>::addOperator(SchwarzOperatorPtr op)\t\t!op->getRangeMap().isSameAs(OperatorVector_[0]->getRangeMap())\n";
+            if (this->Verbose_) cerr <<  "CombinedOperator<SC,LO,GO,NO>::addOperator(SchwarzOperatorPtr op)\t\t!op->getRangeMap().isSameAs(OperatorVector_[0]->getRangeMap())\n";
             ret -= 10;
         }
         OperatorVector_[iD] = op;
@@ -196,7 +196,7 @@ namespace FROSch {
     int CombinedOperator<SC,LO,GO,NO>::enableOperator(UN iD,
                                                  bool enable)
     {
-        FROSCH_DETAILTIMER_START_LEVELID(enableOperatorTime, getOperatorName()+"::enableOperator");
+        FROSCH_DETAILTIMER_START_LEVELID(enableOperatorTime, "CombinedOperator::enableOperator");
         EnableOperators_[iD] = enable;
         return 0;
     }
@@ -214,6 +214,14 @@ namespace FROSch {
         FROSCH_ASSERT(false,"preApplyCoarse(XMultiVectorPtr &x) only implemented for MultiplicativeOperator.")
     }
     
+    template <class SC,class LO,class GO,class NO>
+    void CombinedOperator<SC,LO,GO,NO>::resetMatrix(ConstXMatrixPtr &k)
+    {
+        SchwarzOperator<SC,LO,GO,NO>::resetMatrix(k);
+        for (UN i=1; i<OperatorVector_.size(); i++) {
+            OperatorVector_[i]->resetMatrix(k);
+        }
+    }
 }
 
 #endif
