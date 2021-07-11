@@ -83,6 +83,7 @@ namespace FROSch {
         using UN                    = typename SchwarzOperator<SC,LO,GO,NO>::UN;
 
     public:
+        using SchwarzOperator<SC,LO,GO,NO>::apply;
 
         OverlappingOperator(ConstXMatrixPtr k,
                             ParameterListPtr parameterList);
