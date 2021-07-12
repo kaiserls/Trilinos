@@ -51,7 +51,7 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;    
 
-    //! A simple implementation of an SchwarzPreconditioner with one level.
+    //! A simple implementation of a SchwarzPreconditioner with one level.
     template <class SC = double,
               class LO = int,
               class GO = DefaultGlobalOrdinal,
@@ -112,8 +112,10 @@ namespace FROSch {
 
         ConstXMatrixPtr K_;
 
-        CombinedOperatorPtr CombinedOperator_;
-        OverlappingOperatorPtr OverlappingOperator_;//contained in sum/mult/combined operator, only really needed for multi-level
+        CombinedOperatorPtr CombinedOperator_;  //! Either multiplicative or additive combination of operator on different levels.
+                                                //! In this preconditioner only one level exists.
+        OverlappingOperatorPtr OverlappingOperator_;//! The overlapping schwarz operator on the first level.
+                                                    //! Is also contained in the combined operator.
     };
 
 }

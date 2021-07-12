@@ -51,6 +51,8 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+    //! AlgebraicOverlappingPreconditioner is a purely algebraic overlapping SchwarzPreconditioner.
+    //TODO: //! With an arbitrary number of levels? And additive combination?
     template <class SC = double,
               class LO = int,
               class GO = DefaultGlobalOrdinal,

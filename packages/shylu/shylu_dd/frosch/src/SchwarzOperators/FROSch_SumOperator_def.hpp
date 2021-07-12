@@ -63,11 +63,12 @@ namespace FROSch {
         FROSCH_TIMER_START_LEVELID(applyTime, "SumOperator::apply");
         if (this->OperatorVector_.size()>0) {
             if (this->XTmp_.is_null()) this->XTmp_ = MultiVectorFactory<SC,LO,GO,NO>::Build(x.getMap(),x.getNumVectors());
-            *(this->XTmp_) = x; // Das brauche ich für den Fall das x=y
+            *(this->XTmp_) = x;//Needed for the case x aliasing y
             UN itmp = 0;
             for (UN i=0; i<this->OperatorVector_.size(); i++) {
                 if (this->EnableOperators_[i]) {
                     this->OperatorVector_[i]->apply(*(this->XTmp_),y,usePreconditionerOnly,mode,alpha,beta);
+                    //TODO:???
                     if (itmp==0) beta = ScalarTraits<SC>::one();
                     itmp++;
                 }

@@ -50,9 +50,19 @@ namespace FROSch {
     using namespace std;
     using namespace Teuchos;
     using namespace Xpetra;
+    //! This enum defines which algorithm and datastructure should be used to create the overlapping domain map
+    enum AddingLayersStrategy {
+        //TODO: Explain difference between 0,1 because atm matrix->getCrsGraph is used.
+        LayersFromMatrix=0, //! Create the overlapping element layers with information from the ??? global matrix.
+        LayersFromGraph=1,  //! Create the overlapping element layers with information from the ??? global graph.
+        LayersOld=2         //! Create the overlapping element layers with information from the ??? global matrix.
+                            //! It explizitly calculates the indices of the overlapping domain sequential and is therefore more complicated and slower. ???
+        };
 
-    enum AddingLayersStrategy {LayersFromMatrix=0,LayersFromGraph=1,LayersOld=2};
 
+    //! Implements the algebraical construction of the overlapping map from the given Matrix/Graph.
+    //! The AlgebraicOverlappingOperator needs no geometrical information about the employed discretization.
+    //! It retrieves all information needed to construct the local problem from the structure and values of the globally distributed matrix. 
     template <class SC = double,
               class LO = int,
               class GO = DefaultGlobalOrdinal,
@@ -95,14 +105,14 @@ namespace FROSch {
         string description() const;
 
     protected:
-
+    
         int buildOverlappingMatrices(int overlap,
                                      ConstXMapPtr repeatedMap);
 
         virtual int updateLocalOverlappingMatrices();
 
 
-        AddingLayersStrategy AddingLayersStrategy_ = LayersFromGraph;
+        AddingLayersStrategy AddingLayersStrategy_ = LayersFromGraph; //! The employed AddingLayersStrategy to construct the overlap
     };
 
 }

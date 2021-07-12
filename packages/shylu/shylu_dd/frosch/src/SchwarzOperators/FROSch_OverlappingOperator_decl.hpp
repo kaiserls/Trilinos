@@ -50,6 +50,8 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+    //! A SchwarzOperator which belongs to an overlapping domain decomposition.
+    //! This allows to implement the apply operation of the SchwarzOperator.
     template <class SC = double,
               class LO = int,
               class GO = DefaultGlobalOrdinal,
@@ -102,8 +104,12 @@ namespace FROSch {
                            SC beta=ScalarTraits<SC>::zero()) const;
 
     protected:
-
-        enum CombinationType {Averaging,Full,Restricted};
+        //! The CombinationType defines how the values in the overlapping domain are are combined.
+        enum CombinationType {
+            Averaging, //! Averaging = The average of all values is taken
+            Full, //! Full = The values are added. Can't be used for fixed point iterations therefore.
+            Restricted //! Restricted = Each node is only visited once-> fast. Precedence???
+            };
 
         virtual int initializeOverlappingOperator();
 
@@ -112,9 +118,9 @@ namespace FROSch {
         virtual int updateLocalOverlappingMatrices() = 0;
 
 
-        ConstXMatrixPtr OverlappingMatrix_;
+        ConstXMatrixPtr OverlappingMatrix_; //! Distributed overlapping matrix
 
-        ConstXMapPtr OverlappingMap_;
+        ConstXMapPtr OverlappingMap_; //! Distribution of the nodes/node indices over the ranks
 
         // Temp Vectors for apply()
         mutable XMultiVectorPtr XTmp_;
@@ -122,11 +128,13 @@ namespace FROSch {
         mutable XMultiVectorPtr XOverlapTmp_;
         mutable XMultiVectorPtr YOverlap_;
 
-        XImportPtr Scatter_;
+        XImportPtr Scatter_; //! Describes how to exchange data between the overlapping map and the global map
 
-        SolverPtr SubdomainSolver_;
+        SolverPtr SubdomainSolver_; //! Solver for the local problem on this subdomain. Used each time the operator is applied.
 
-        XMultiVectorPtr Multiplicity_;
+        XMultiVectorPtr Multiplicity_; //! Stores in how many domains each node is contained.
+
+        CombinationType Combine_ = Averaging; //! The employed CombinationType
 
         CombinationType Combine_ = Averaging;
     };

@@ -54,6 +54,9 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+    //! The GDSW (Generalized Dryja-Smith-Widlund) preconditioner is a geometric two-level overlapping Schwarz preconditioner with energy-minimizing coarse space.
+    //! Heinlein, Alexander, Axel Klawonn, and Oliver Rheinbach. "A parallel implementation of a two-level overlapping Schwarz method with energy-minimizing coarse space based on Trilinos."
+    //! SIAM Journal on Scientific Computing 38.6 (2016): C713-C747.
     template <class SC = double,
               class LO = int,
               class GO = DefaultGlobalOrdinal,

@@ -185,7 +185,7 @@ namespace FROSch {
     {
         FROSCH_DETAILTIMER_START_LEVELID(initializeOverlappingOperatorTime,"OverlappingOperator::initializeOverlappingOperator");
         Scatter_ = ImportFactory<LO,GO,NO>::Build(this->getDomainMap(),OverlappingMap_);
-        if (Combine_ == Averaging) {
+        // Calculate multiplicity if needed
             Multiplicity_ = MultiVectorFactory<SC,LO,GO,NO>::Build(this->getRangeMap(),1);
             XMultiVectorPtr multiplicityRepeated;
             multiplicityRepeated = MultiVectorFactory<SC,LO,GO,NO>::Build(OverlappingMap_,1);
@@ -197,6 +197,7 @@ namespace FROSch {
         return 0; // RETURN VALUE
     }
 
+    //! Essentially prepares the subdomain solver to be used
     template <class SC,class LO,class GO,class NO>
     int OverlappingOperator<SC,LO,GO,NO>::computeOverlappingOperator()
     {

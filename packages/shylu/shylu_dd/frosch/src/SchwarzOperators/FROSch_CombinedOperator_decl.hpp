@@ -93,7 +93,7 @@ namespace FROSch {
 
         virtual int compute();
         //! Apply the CombinedOperator by applying the individual SchwarzOperators and combining them
-        //! Why is beta=zero???
+        //TODO: Why is beta=zero???
         virtual void apply(const XMultiVector &x,
                            XMultiVector &y,
                            bool usePreconditionerOnly,
@@ -109,24 +109,22 @@ namespace FROSch {
                               const EVerbosityLevel verbLevel=Describable::verbLevel_default) const;
 
         virtual string description() const;
-        //! Add a SchwarzOperator to the summation.
+
         int addOperator(SchwarzOperatorPtr op);
-        //! Add a vector/list of SchwarzOperators to the summation.
+
         int addOperators(SchwarzOperatorPtrVecPtr operators);
-        //! Replace a SchwarzOperator with specific id.
+
         int resetOperator(UN iD,
                           SchwarzOperatorPtr op);
-        //! Set the status of a SchwarzOperator with specific id. Disabled operators will be skipped in apply.
+
         int enableOperator(UN iD,
                            bool enable);
-        //! Number of individual SchwarzOperators combined in this operator
+
         UN getNumOperators();
 
-        //! ???
         virtual void preApplyCoarse(XMultiVector &x,
                             XMultiVector &y);
 
-        //Reset matrix for the combined operator and all operators contained in the OperatorVector
         virtual void resetMatrix(ConstXMatrixPtr &k);
 
     protected:
@@ -136,6 +134,7 @@ namespace FROSch {
         //! Temp Vectors for apply()
         mutable XMultiVectorPtr XTmp_;
 
+        //! Saves which operators are enabled and which are disabled
         BoolVec EnableOperators_ = BoolVec(0);
     };
 

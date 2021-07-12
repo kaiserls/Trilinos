@@ -86,6 +86,7 @@ namespace FROSch {
         return OverlappingOperator_->compute();
     }
 
+    //! Apply the operator by applying the underlying sumoperator
     template <class SC,class LO,class GO,class NO>
     void AlgebraicOverlappingPreconditioner<SC,LO,GO,NO>::apply(const XMultiVector &x,
                                                                 XMultiVector &y,

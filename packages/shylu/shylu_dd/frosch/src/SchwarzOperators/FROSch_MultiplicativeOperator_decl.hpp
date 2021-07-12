@@ -51,7 +51,7 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
-    //! Multiplicative combination of SchwarzOperators
+    //! Multiplicative combination of SchwarzOperators on different levels
     template <class SC = double,
               class LO = int,
               class GO = DefaultGlobalOrdinal,
@@ -82,10 +82,10 @@ namespace FROSch {
 
         using CombinedOperator<SC,LO,GO,NO>::CombinedOperator;
 
-        //! ???
+
         void preApplyCoarse(XMultiVector &x,
                             XMultiVector &y);
-        //! Apply the MultiplicativeOperator by applying the individual SchwarzOperators and combining the results in a multiplicative manner
+
         void apply(const XMultiVector &x,
                            XMultiVector &y,
                            bool usePreconditionerOnly,

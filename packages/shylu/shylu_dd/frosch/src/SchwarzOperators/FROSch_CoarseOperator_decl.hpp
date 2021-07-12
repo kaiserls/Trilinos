@@ -68,6 +68,8 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+    //! The CoarseOperator (P_0) solves a global but very coarse (therefore small) problem, providing a global coupling.
+    //! It accelerates the convergence in a fixpoint iteration / improves the condition number for iterative solvers.
     template <class SC = double,
               class LO = int,
               class GO = DefaultGlobalOrdinal,
@@ -166,7 +168,6 @@ namespace FROSch {
 
         virtual CoarseSpacePtr getCoarseSpace() const;
 
-        //Repeated Coarse map
         virtual int buildElementNodeList() = 0;
 
         virtual int buildGlobalGraph(Teuchos::RCP<DDInterface<SC,LO,GO,NO> > theDDInterface_) = 0;

@@ -51,6 +51,7 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+    //TODO: Explain what the effect/use/reason for this is
     template <class SC,class LO,class GO,class NO>
     void MultiplicativeOperator<SC,LO,GO,NO>::preApplyCoarse(XMultiVector &x,
                                                              XMultiVector &y)
@@ -59,7 +60,8 @@ namespace FROSch {
         FROSCH_ASSERT(this->OperatorVector_.size()==2,"Should be a Two-Level Operator.");
         this->OperatorVector_[1]->apply(x,y,true);
     }
-
+    //! Apply the MultiplicativeOperator by applying the individual SchwarzOperators
+    //! and combine the results in a multiplicative manner.
     // Y = alpha * A^mode * X + beta * Y
     template <class SC,class LO,class GO,class NO>
     void MultiplicativeOperator<SC,LO,GO,NO>::apply(const XMultiVector &x,
@@ -70,6 +72,7 @@ namespace FROSch {
                                                     SC beta) const
     {
         FROSCH_TIMER_START_LEVELID(applyTime,"MultiplicativeOperator::apply");
+        //TODO: Explain usePreconditionerOnly somewhere
         FROSCH_ASSERT(usePreconditionerOnly,"MultiplicativeOperator can only be used as a preconditioner.");
         FROSCH_ASSERT(this->OperatorVector_.size()==2,"Should be a Two-Level Operator.");
 
@@ -81,9 +84,9 @@ namespace FROSch {
         *YTmp_ = y; // for the second apply
 
         this->OperatorVector_[0]->apply(*(this->XTmp_),*YTmp_,false);
-
+        //TODO: Why transpose mode?
         this->OperatorVector_[1]->apply(*(this->XTmp_),*(this->XTmp_),true);
-
+        //TODO: Mathematical equivalent?
         YTmp_->update(ScalarTraits<SC>::one(),*(this->XTmp_),-ScalarTraits<SC>::one());
         y.update(alpha,*YTmp_,beta);
     }

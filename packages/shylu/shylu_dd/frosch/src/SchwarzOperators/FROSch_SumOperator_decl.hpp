@@ -79,7 +79,6 @@ namespace FROSch {
     public:
         using CombinedOperator<SC,LO,GO,NO>::CombinedOperator;
         //! Apply the SumOperator by applying the individual SchwarzOperators and combining the results in an additive manner
-        //! Why is beta=zero???
         void apply(const XMultiVector &x,
                            XMultiVector &y,
                            bool usePreconditionerOnly,

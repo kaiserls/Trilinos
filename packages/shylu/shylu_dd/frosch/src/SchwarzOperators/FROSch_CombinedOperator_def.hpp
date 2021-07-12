@@ -65,6 +65,7 @@ namespace FROSch {
         FROSCH_DETAILTIMER_START_LEVELID(combinedOperatorTime, "CombinedOperator::CombinedOperator");
         FROSCH_ASSERT(operators.size()>0,"operators.size()<=0");
         OperatorVector_.push_back(operators[0]);
+        //TODO: Why isn't true pushed to enable operators?
         for (unsigned i=1; i<operators.size(); i++) {
             FROSCH_ASSERT(operators[i]->OperatorDomainMap().SameAs(OperatorVector_[0]->OperatorDomainMap()),"The DomainMaps of the operators are not identical.");
             FROSCH_ASSERT(operators[i]->OperatorRangeMap().SameAs(OperatorVector_[0]->OperatorRangeMap()),"The RangeMaps of the operators are not identical.");
@@ -140,10 +141,12 @@ namespace FROSch {
         return labelString;
     }
 
+    //! Add a SchwarzOperator to the combination
     template <class SC,class LO,class GO,class NO>
     int CombinedOperator<SC,LO,GO,NO>::addOperator(SchwarzOperatorPtr op)
     {
         FROSCH_DETAILTIMER_START_LEVELID(addOperatorTime, "CombinedOperator::addOperator");
+        // Check if the new operator is compatible with the existing one(s).
         int ret = 0;
         if (OperatorVector_.size()>0) {
             if (!op->getDomainMap()->isSameAs(*OperatorVector_[0]->getDomainMap())) {
@@ -154,25 +157,26 @@ namespace FROSch {
                 if (this->Verbose_) cerr <<  "CombinedOperator<SC,LO,GO,NO>::addOperator(SchwarzOperatorPtr op)\t\t!op->getRangeMap().isSameAs(OperatorVector_[0]->getRangeMap())\n";
                 ret -= 10;
             }
-            //FROSCH_ASSERT(op->OperatorDomainMap().SameAs(OperatorVector_[0]->OperatorDomainMap()),"The DomainMaps of the operators are not identical.");
-            //FROSCH_ASSERT(op->OperatorRangeMap().SameAs(OperatorVector_[0]->OperatorRangeMap()),"The RangeMaps of the operators are not identical.");
         }
+        // Add the operator, compatibility is encoded in return type (!=0 for invalid)
         OperatorVector_.push_back(op);
         EnableOperators_.push_back(true);
         return ret;
     }
 
+    //! Add a vector/list of SchwarzOperators to the combination.
     template <class SC,class LO,class GO,class NO>
     int CombinedOperator<SC,LO,GO,NO>::addOperators(SchwarzOperatorPtrVecPtr operators)
     {
         FROSCH_DETAILTIMER_START_LEVELID(addOperatorsTime, "CombinedOperator::addOperators");
         int ret = 0;
         for (UN i=1; i<operators.size(); i++) {
-            if (0>addOperator(operators[i])) ret -= pow(10,i);
+            if (0>addOperator(operators[i])) ret -= pow(10,i);//Injective encoding of error value to added operator
         }
         return ret;
     }
 
+    //! Replace a SchwarzOperator with specific id.
     template <class SC,class LO,class GO,class NO>
     int CombinedOperator<SC,LO,GO,NO>::resetOperator(UN iD,
                                                 SchwarzOperatorPtr op)
@@ -192,6 +196,8 @@ namespace FROSch {
         return ret;
     }
 
+    //! Set the status of a SchwarzOperator with specific id.
+    //! Disabled operators will be skipped in apply.
     template <class SC,class LO,class GO,class NO>
     int CombinedOperator<SC,LO,GO,NO>::enableOperator(UN iD,
                                                  bool enable)
@@ -201,12 +207,16 @@ namespace FROSch {
         return 0;
     }
 
+    //! Returns the number of individual SchwarzOperators combined in this operator
     template <class SC,class LO,class GO,class NO>
     typename CombinedOperator<SC,LO,GO,NO>::UN CombinedOperator<SC,LO,GO,NO>::getNumOperators()
     {
         return OperatorVector_.size();
     }
 
+    //! Preapply coarse allows to apply the coarse operator before the first level.
+    //TODO: Results in an symmetric operator for a one-level preconditioner???
+    //! Why is this not handled by adding the OperatorPtr to the vector againg?
     template <class SC,class LO,class GO,class NO>
     void CombinedOperator<SC,LO,GO,NO>::preApplyCoarse(XMultiVector &x,
                                 XMultiVector &y) 
@@ -214,6 +224,7 @@ namespace FROSch {
         FROSCH_ASSERT(false,"preApplyCoarse(XMultiVectorPtr &x) only implemented for MultiplicativeOperator.")
     }
     
+    //! Reset matrix for the combined operator and all operators contained in the OperatorVector
     template <class SC,class LO,class GO,class NO>
     void CombinedOperator<SC,LO,GO,NO>::resetMatrix(ConstXMatrixPtr &k)
     {
