@@ -64,6 +64,12 @@ namespace FROSch {
         } else if (!this->ParameterList_->get("Combine Values in Overlap","Restricted").compare("Restricted")) {
             Combine_ = Restricted;
         }
+        //TODO: Reworkt his with new ciombientype
+        HarmonicOnOverlap_ = this->ParameterList_->get("HarmonicOnOverlap",false);
+        FROSCH_ASSERT(HarmonicOnOverlap_ == (Combine_ == Full), "HarmonicOnOverlap can only be combined with CombineType=Full");
+        //TODO: Only as preconditioner?!
+        //TODO: Remove this after finishing harmonic overlap
+        std::cout<<"Using my source code for harmonic overlap"<<HarmonicOnOverlap_<<std::endl;
     }
 
     template <class SC,class LO,class GO,class NO>
@@ -73,6 +79,8 @@ namespace FROSch {
     }
 
     // Y = alpha * A^mode * X + beta * Y
+    //TODO: Explain the different steps beforehand or in the code. Same could be achieved by creating
+    // more subfunctions and giving them good names.
     template <class SC,class LO,class GO,class NO>
     void OverlappingOperator<SC,LO,GO,NO>::apply(const XMultiVector &x,
                                                  XMultiVector &y,
@@ -85,15 +93,48 @@ namespace FROSch {
         FROSCH_ASSERT(this->IsComputed_,"FROSch::OverlappingOperator: OverlappingOperator has to be computed before calling apply()");
         if (XTmp_.is_null()) XTmp_ = MultiVectorFactory<SC,LO,GO,NO>::Build(x.getMap(),x.getNumVectors());
         *XTmp_ = x;
+
+        //TODO: Implement harmonic overlap
+        // HarmonicOnOverlap means, that the local solution should decay harmonic on the overlap: B(u,u)=0
+        // Therefore we set the right hand side x (in the residual equation in a krylov space solver) to zero
+        // for all entries in the overlap. This in done by examining the multiplicity of the node.
+        std::cout<<"multiplicity"<<std::endl;
+        if(HarmonicOnOverlap_){
+            ConstSCVecPtr multi = Multiplicity_->getData(0);
+            for (UN j=0; j<XTmp_->getNumVectors(); j++) {
+                SCVecPtr values = XTmp_->getDataNonConst(j);
+                for (UN i=0; i<values.size(); i++) {
+                    if(multi[i]>1) values[i] = ScalarTraits<SC>::zero();
+                    std::cout<<multi[i];
+                }
+                
+            }
+        }
+        std::cout<<std::endl;
+        //TODO: test with galeri, fem example
+        // Create harmonic vector
+        // const RCP<const XMultiVector> Bptr = rcp(&B,false);
+        // XMultiVectorPtr Xharmonic =  MultiVectorFactory<SC,LO,GO,NO>::Build(XTmp_,Teuchos::DataAccess::Copy);
+        // ConstSCVecPtr multi = Multiplicity_->getData(0);
+        // for (UN j=0; j<Xharmonic->getNumVectors(); j++) {
+        //     SCVecPtr values = Xharmonic->getDataNonConst(j);
+        //     for (UN i=0; i<values.size(); i++) {
+        //         if(multi[i]>1) values[i] = ScalarTraits<SC>::zero();
+        //     }
+        // }
+
+        // fixpunkt etc.
         if (!usePreconditionerOnly && mode == NO_TRANS) {
             this->K_->apply(x,*XTmp_,mode,ScalarTraits<SC>::one(),ScalarTraits<SC>::zero());
         }
         // AH 11/28/2018: For Epetra, XOverlap_ will only have a view to the values of XOverlapTmp_. Therefore, xOverlapTmp should not be deleted before XOverlap_ is used.
-        if (YOverlap_.is_null()) {
+        if (YOverlap_.is_null()) {//first time running appy will create this vector
             YOverlap_ = MultiVectorFactory<SC,LO,GO,NO>::Build(OverlappingMatrix_->getDomainMap(),x.getNumVectors());
-        } else {
+        } else { //switch from global to local communicator -> sure that no communication happens
             YOverlap_->replaceMap(OverlappingMatrix_->getDomainMap());
         }
+
+        //TODO: Explain a little bit more what is happening here
         // AH 11/28/2018: replaceMap does not update the GlobalNumRows. Therefore, we have to create a new MultiVector on the serial Communicator. In Epetra, we can prevent to copy the MultiVector.
         if (XTmp_->getMap()->lib() == UseEpetra) {
 #ifdef HAVE_XPETRA_EPETRA
@@ -115,10 +156,10 @@ namespace FROSch {
             if (XOverlap_.is_null()) {
                 XOverlap_ = MultiVectorFactory<SC,LO,GO,NO>::Build(OverlappingMap_,x.getNumVectors());
             } else {
-                XOverlap_->replaceMap(OverlappingMap_);
+                XOverlap_->replaceMap(OverlappingMap_);//global map
             }
             XOverlap_->doImport(*XTmp_,*Scatter_,INSERT);
-            XOverlap_->replaceMap(OverlappingMatrix_->getRangeMap());
+            XOverlap_->replaceMap(OverlappingMatrix_->getRangeMap());// local map
         }
         SubdomainSolver_->apply(*XOverlap_,*YOverlap_,mode,ScalarTraits<SC>::one(),ScalarTraits<SC>::zero());
         YOverlap_->replaceMap(OverlappingMap_);
@@ -126,6 +167,8 @@ namespace FROSch {
         XTmp_->putScalar(ScalarTraits<SC>::zero());
         ConstXMapPtr yMap = y.getMap();
         ConstXMapPtr yOverlapMap = YOverlap_->getMap();
+        //TODO: harmonic sollte nicht mit restricted oder averaging vervendet werden!
+        // apply großteils bei mir anders -> evtl eigene klasse abletien, oder restrictionPorolongation in subfunction
         if (Combine_ == Restricted) {
 #if defined(HAVE_XPETRA_KOKKOS_REFACTOR) && defined(HAVE_XPETRA_TPETRA)
             if (XTmp_->getMap()->lib() == UseTpetra) {
@@ -186,6 +229,7 @@ namespace FROSch {
         FROSCH_DETAILTIMER_START_LEVELID(initializeOverlappingOperatorTime,"OverlappingOperator::initializeOverlappingOperator");
         Scatter_ = ImportFactory<LO,GO,NO>::Build(this->getDomainMap(),OverlappingMap_);
         // Calculate multiplicity if needed
+        if (Combine_ == Averaging || HarmonicOnOverlap_) {
             Multiplicity_ = MultiVectorFactory<SC,LO,GO,NO>::Build(this->getRangeMap(),1);
             XMultiVectorPtr multiplicityRepeated;
             multiplicityRepeated = MultiVectorFactory<SC,LO,GO,NO>::Build(OverlappingMap_,1);

@@ -136,7 +136,10 @@ namespace FROSch {
 
         CombinationType Combine_ = Averaging; //! The employed CombinationType
 
-        CombinationType Combine_ = Averaging;
+        bool HarmonicOnOverlap_ = false; //! Use harmonic decay of subdomain "solution" on overlap
+                                         //! Sarkis, Marcus. "Partition of unity coarse spaces and Schwarz methods with
+                                         //! harmonic overlap." Recent Developments in Domain Decomposition Methods. Springer, Berlin, Heidelberg, 2002. 77-94.
+        //TODO: Add harmonic as combinetype, maybe change name of combinetype
     };
 
 }

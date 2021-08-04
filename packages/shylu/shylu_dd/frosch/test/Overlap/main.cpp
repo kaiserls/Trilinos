@@ -317,6 +317,7 @@ int main(int argc, char *argv[])
         RCP<ParameterList> plList =  sublist(parameterList,"Preconditioner Types");
         sublist(plList,"FROSch")->set("Dimension",Dimension);
         sublist(plList,"FROSch")->set("Overlap",Overlap);
+        sublist(plList,"FROSch")->set("HarmonicOnOverlap",true);
         if (NumberOfBlocks>1) {
             sublist(plList,"FROSch")->set("Repeated Map Vector",RepeatedMaps);
 
@@ -381,6 +382,11 @@ int main(int argc, char *argv[])
         Comm->barrier(); if (Comm->getRank()==0) cout << "\n#########\n# Solve #\n#########" << endl;
         SolveStatus<double> status =
         solve<double>(*lows, Thyra::NOTRANS, *thyraB, thyraX.ptr());
+        
+        //TODO: Implement this correctly, not based in the string representation!
+        std::cout<<"huhu"<<toString(status)<<std::endl;
+        assert(toString(status).find("SOLVE_STATUS_CONVERGED")!=string::npos  );
+
 
         Comm->barrier(); if (Comm->getRank()==0) cout << "\n#############\n# Finished! #\n#############" << endl;
     }

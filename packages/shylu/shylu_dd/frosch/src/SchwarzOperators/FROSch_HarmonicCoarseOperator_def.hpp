@@ -97,7 +97,8 @@ namespace FROSch {
         XMatrixPtr kIGamma;
         XMatrixPtr kGammaI;
         XMatrixPtr kGammaGamma;
-
+        
+        // Diese Funktion baut aus repeatedMatrix submatrices für kII kIHamme, kHamaI, kGHammagamma
         BuildSubmatrices(repeatedMatrix,indicesIDofsAll(),kII,kIGamma,kGammaI,kGammaGamma);
 
         //Detect linear dependencies
@@ -661,8 +662,8 @@ namespace FROSch {
     typename HarmonicCoarseOperator<SC,LO,GO,NO>::XMultiVectorPtr HarmonicCoarseOperator<SC,LO,GO,NO>::computeExtensions(ConstXMapPtr localMap,
                                                                                                                          GOVecView indicesGammaDofsAll,
                                                                                                                          GOVecView indicesIDofsAll,
-                                                                                                                         XMatrixPtr kII,
-                                                                                                                         XMatrixPtr kIGamma)
+                                                                                                                         XMatrixPtr kII,//auf diese wird fortgesetzt
+                                                                                                                         XMatrixPtr kIGamma)//von diesen wird fortgesetzt
     {
         FROSCH_DETAILTIMER_START_LEVELID(computeExtensionsTime,"HarmonicCoarseOperator::computeExtensions");
 

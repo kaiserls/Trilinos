@@ -359,7 +359,7 @@ namespace FROSch {
             } else {
                 interfacePartitionOfUnity->removeDirichletNodes(dirichletBoundaryDofs(),nodeList);
                 interfacePartitionOfUnity->sortInterface(this->K_,nodeList);
-
+                // TODO: Do similar for overlapping and nonoverlapping PU
                 // Construct Interface and Interior index sets
                 this->GammaDofs_[blockId] = LOVecPtr(this->DofsPerNode_[blockId]*interface->getNumNodes());
                 this->IDofs_[blockId] = LOVecPtr(this->DofsPerNode_[blockId]*interior->getNumNodes());
@@ -375,7 +375,7 @@ namespace FROSch {
                 interfacePartitionOfUnity->computePartitionOfUnity(nodeList);
                 PartitionOfUnity_ = interfacePartitionOfUnity;
             }
-
+            //TODO: Do the same on nonoverlapping or complete "part"domain
             // Construct local Interface nullspace basis (in case the interface was empty before, it was replaced by the interior. Therfore, this should be correct as well)
             ConstXMapPtr nullSpaceBasisMap = nullSpaceBasis->getMap();
             XMapPtr serialInterfaceMap = MapFactory<LO,GO,NO>::Build(nullSpaceBasisMap->lib(),this->GammaDofs_[blockId].size(),this->GammaDofs_[blockId].size(),0,this->SerialComm_);
