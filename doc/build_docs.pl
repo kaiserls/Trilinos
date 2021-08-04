@@ -138,7 +138,7 @@ sub buildDocs {
     
     # Is this file in a 'doc' directory?
     # Is this file named 'build_docs'?
-    if ($dir =~ m/doc$/ && $file =~ m/build_docs$/) {
+    if ($dir =~ m/shylu\/doc$/ && $file =~ m/build_docs$/) {
     
         my $shortDir = $absFile;
         $shortDir =~ m/.*\/packages\/(.*)\/doc.*/;

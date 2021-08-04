@@ -13,7 +13,7 @@ PROJECT_NAME         = "ShyLU"
 PROJECT_NUMBER       = "Version of the Day"
 OUTPUT_DIRECTORY     = .
 OUTPUT_LANGUAGE      = English
-EXTRACT_ALL          = NO
+EXTRACT_ALL          = YES
 EXTRACT_PRIVATE      = NO
 EXTRACT_STATIC       = YES
 #May want to go back and change undoc_members
@@ -46,7 +46,7 @@ WARNINGS             = YES
 WARN_IF_UNDOCUMENTED = YES
 WARN_FORMAT          = "$file:$line: $text"
 
-INPUT                = . ../core/src/epetra  ../core/src/interfaces ../ichol/src
+INPUT                = . .. ../core/src/epetra  ../core/src/interfaces ../ichol/src
 FILE_PATTERNS        = *.hpp *.h *.cpp *.c *.dox
 RECURSIVE            = YES
 EXCLUDE              = .git build
