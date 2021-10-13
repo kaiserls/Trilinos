@@ -73,6 +73,8 @@ namespace FROSch {
     }
 
     // Y = alpha * A^mode * X + beta * Y
+    //TODO: Explain the different steps beforehand or in the code. Same could be achieved by creating
+    // more subfunctions and giving them good names.
     template <class SC,class LO,class GO,class NO>
     void OverlappingOperator<SC,LO,GO,NO>::apply(const XMultiVector &x,
                                                  XMultiVector &y,
@@ -91,9 +93,11 @@ namespace FROSch {
         // AH 11/28/2018: For Epetra, XOverlap_ will only have a view to the values of XOverlapTmp_. Therefore, xOverlapTmp should not be deleted before XOverlap_ is used.
         if (YOverlap_.is_null()) {
             YOverlap_ = MultiVectorFactory<SC,LO,GO,NO>::Build(OverlappingMatrix_->getDomainMap(),x.getNumVectors());
-        } else {
+        } else { //switch from global to local communicator -> sure that no communication happens
             YOverlap_->replaceMap(OverlappingMatrix_->getDomainMap());
         }
+
+        //TODO: Explain a little bit more what is happening here
         // AH 11/28/2018: replaceMap does not update the GlobalNumRows. Therefore, we have to create a new MultiVector on the serial Communicator. In Epetra, we can prevent to copy the MultiVector.
         if (XTmp_->getMap()->lib() == UseEpetra) {
 #ifdef HAVE_XPETRA_EPETRA
@@ -115,10 +119,10 @@ namespace FROSch {
             if (XOverlap_.is_null()) {
                 XOverlap_ = MultiVectorFactory<SC,LO,GO,NO>::Build(OverlappingMap_,x.getNumVectors());
             } else {
-                XOverlap_->replaceMap(OverlappingMap_);
+                XOverlap_->replaceMap(OverlappingMap_);//global map
             }
             XOverlap_->doImport(*XTmp_,*Scatter_,INSERT);
-            XOverlap_->replaceMap(OverlappingMatrix_->getRangeMap());
+            XOverlap_->replaceMap(OverlappingMatrix_->getRangeMap());// local map
         }
         SubdomainSolver_->apply(*XOverlap_,*YOverlap_,mode,ScalarTraits<SC>::one(),ScalarTraits<SC>::zero());
         YOverlap_->replaceMap(OverlappingMap_);

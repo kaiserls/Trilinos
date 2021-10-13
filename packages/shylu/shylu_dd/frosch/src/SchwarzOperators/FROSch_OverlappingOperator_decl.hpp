@@ -128,7 +128,7 @@ namespace FROSch {
         mutable XMultiVectorPtr XOverlapTmp_;
         mutable XMultiVectorPtr YOverlap_;
 
-        XImportPtr Scatter_; //! Describes how to exchange data between the overlapping map and the global map
+        XImportPtr Scatter_; //! Describes how to exchange data between the overlapping map and the global uniquely distributed map???
 
         SolverPtr SubdomainSolver_; //! Solver for the local problem on this subdomain. Used each time the operator is applied.
 

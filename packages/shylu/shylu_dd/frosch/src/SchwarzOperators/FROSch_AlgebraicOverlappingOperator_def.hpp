@@ -76,7 +76,7 @@ namespace FROSch {
 
     /**
      * @brief Builds the overlapping matrix with given overlap and initializes the underlying OverlappingOperator.
-     *        It prepares import/export objects and calculatex multiplicity of nodes if needed.
+     *        It prepares import/export objects and calculates multiplicity of nodes if needed.
      * 
      * @param overlap The number of layers in the overlap of the domain decomposition
      * @param repeatedMap This map is like the unique map from the domain decomposition but shares the interfaces across the corresponding ranks.
@@ -185,8 +185,9 @@ namespace FROSch {
         if (verbosity==All) {
             FROSCH_DETAILTIMER_START_LEVELID(printStatisticsTime,"print statistics");
 
-            //TODO: What is this doing?
+            // Global number of nodes
             global = this->OverlappingMap_->getMaxAllGlobalIndex();
+            // Handle the different indexing of epetra and the case of an empty map ???
             if (this->OverlappingMap_->lib()==UseEpetra || this->OverlappingMap_->getGlobalNumElements()>0) {
                 global += 1;
             }

@@ -55,6 +55,7 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+    //! What does this class represent and what is the meaning of the member variables
     template <typename LO,typename GO>
     OverlappingData<LO,GO>::OverlappingData(GO gid,
                                             int pid,
@@ -66,6 +67,7 @@ namespace FROSch {
 
     }
 
+    //! ???
     template <typename LO,typename GO>
     int OverlappingData<LO,GO>::Merge(const RCP<OverlappingData<LO,GO> > od) const
     {
@@ -248,7 +250,7 @@ namespace FROSch {
 
     //TODO:explain tiebreak and check description
     //! Creates a unique map from an potentially overlapping map with the function "CreateOneToOneMap" from tpetra
-    //! or an own implementation.
+    //! or the own frosch implementation if useCreateOneToOneMap==false
     template <class LO,class GO,class NO>
     RCP<const Map<LO,GO,NO> > BuildUniqueMap(const RCP<const Map<LO,GO,NO> > map,
                                              bool useCreateOneToOneMap,
@@ -538,14 +540,17 @@ namespace FROSch {
     }
 
     //TODO: Comment on this function
+    //! Builds the repeatedMap sharing nodes on the interface from the unique rowmap of the graph???
     template <class LO,class GO,class NO>
     RCP<Map<LO,GO,NO> > BuildRepeatedMapNonConst(RCP<const CrsGraph<LO,GO,NO> > graph)
     {
+        // Init and extend overlap by one to have interface on each graph
         FROSCH_DETAILTIMER_START(buildRepeatedMapNonConstTime,"BuildRepeatedMapNonConst");
         RCP<const Map<LO,GO,NO> > uniqueMap = graph->getRowMap();
         RCP<const Map<LO,GO,NO> > overlappingMap;
         ExtendOverlapByOneLayer<LO,GO,NO>(graph,uniqueMap,graph,overlappingMap);
 
+        // ???
         RCP<CrsGraph<LO,GO,NO> > tmpGraphUnique = CrsGraphFactory<LO,GO,NO>::Build(uniqueMap,1);
         Array<GO> myPID(1,uniqueMap->getComm()->getRank());
         for (unsigned i=0; i<uniqueMap->getNodeNumElements(); i++) {
