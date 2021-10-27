@@ -112,6 +112,8 @@ namespace FROSch {
              class NO>
     class TwoLevelBlockPreconditioner;
 
+    //! The subdomain solver is an interface to several solvers like
+    //! Amesos and Belos and provides constructors to be constructed from inside the FROSch framework.
     template <class SC = double,
               class LO = int,
               class GO = DefaultGlobalOrdinal,

@@ -145,10 +145,19 @@ int main(int argc, char *argv[])
 
     int N = 0;
     int color=1;
+    int mx=0;
+    int my=0;
     if (Dimension == 2) {
         N = (int) (pow(CommWorld->getSize(),1/2.) + 100*numeric_limits<double>::epsilon()); // 1/H
         if (CommWorld->getRank()<N*N) {
             color=0;
+            mx=N;
+            my=N;
+        }
+        if(CommWorld->getSize()==2){
+            color=0;
+            mx=2;
+            my=1;
         }
     } else if (Dimension == 3) {
         N = (int) (pow(CommWorld->getSize(),1/3.) + 100*numeric_limits<double>::epsilon()); // 1/H
@@ -174,6 +183,7 @@ int main(int argc, char *argv[])
 
         ArrayRCP<RCP<Matrix<SC,LO,GO,NO> > > K(NumberOfBlocks);
         ArrayRCP<RCP<Map<LO,GO,NO> > > RepeatedMaps(NumberOfBlocks);
+        ArrayRCP<RCP<Map<LO,GO,NO> > > UniqueMaps(NumberOfBlocks);
         ArrayRCP<RCP<MultiVector<SC,LO,GO,NO> > > Coordinates(NumberOfBlocks);
         ArrayRCP<UN> dofsPerNodeVector(NumberOfBlocks);
 
@@ -183,11 +193,11 @@ int main(int argc, char *argv[])
             dofsPerNodeVector[block] = (UN) max(int(DofsPerNode-block),1);
 
             ParameterList GaleriList;
-            GaleriList.set("nx", GO(N*(M+block)));
-            GaleriList.set("ny", GO(N*(M+block)));
+            GaleriList.set("nx", GO(mx*(M+block)));
+            GaleriList.set("ny", GO(my*(M+block)));
             GaleriList.set("nz", GO(N*(M+block)));
-            GaleriList.set("mx", GO(N));
-            GaleriList.set("my", GO(N));
+            GaleriList.set("mx", GO(mx));
+            GaleriList.set("my", GO(my));
             GaleriList.set("mz", GO(N));
 
             RCP<const Map<LO,GO,NO> > UniqueMapTmp;
@@ -261,6 +271,7 @@ int main(int argc, char *argv[])
                 assert(false);
             }
 
+            UniqueMaps[block]   = UniqueMap;
             RepeatedMaps[block] = BuildRepeatedMapNonConst<LO,GO,NO>(K[block]->getCrsGraph()); //RCP<FancyOStream> fancy = fancyOStream(rcpFromRef(cout)); RepeatedMaps[block]->describe(*fancy,VERB_EXTREME);
         }
 
@@ -302,17 +313,27 @@ int main(int argc, char *argv[])
             assert(false);
         }
 
+        // RCP<FancyOStream> fancy = fancyOStream(rcpFromRef(cout));
+        // KMonolithic->describe(*fancy,VERB_EXTREME);
+
         RCP<MultiVector<SC,LO,GO,NO> > xSolution = MultiVectorFactory<SC,LO,GO,NO>::Build(KMonolithic->getMap(),1);
         RCP<MultiVector<SC,LO,GO,NO> > xRightHandSide = MultiVectorFactory<SC,LO,GO,NO>::Build(KMonolithic->getMap(),1);
+        RCP<MultiVector<SC,LO,GO,NO> > xSolutionModified = MultiVectorFactory<SC,LO,GO,NO>::Build(KMonolithic->getMap(),1);
+        RCP<MultiVector<SC,LO,GO,NO> > xRightHandSideModified = MultiVectorFactory<SC,LO,GO,NO>::Build(KMonolithic->getMap(),1);
 
         xSolution->putScalar(ScalarTraits<SC>::zero());
         xRightHandSide->putScalar(ScalarTraits<SC>::one());
+        xSolutionModified->putScalar(ScalarTraits<SC>::zero());
+        xRightHandSideModified->putScalar(ScalarTraits<SC>::one());
 
         CrsMatrixWrap<SC,LO,GO,NO>& crsWrapK = dynamic_cast<CrsMatrixWrap<SC,LO,GO,NO>&>(*KMonolithic);
         RCP<const LinearOpBase<SC> > K_thyra = ThyraUtils<SC,LO,GO,NO>::toThyra(crsWrapK.getCrsMatrix());
         RCP<MultiVectorBase<SC> >thyraX = rcp_const_cast<MultiVectorBase<SC> >(ThyraUtils<SC,LO,GO,NO>::toThyraMultiVector(xSolution));
-        RCP<const MultiVectorBase<SC> >thyraB = ThyraUtils<SC,LO,GO,NO>::toThyraMultiVector(xRightHandSide);
+        RCP<MultiVectorBase<SC> >thyraB = rcp_const_cast<MultiVectorBase<SC> >(ThyraUtils<SC,LO,GO,NO>::toThyraMultiVector(xRightHandSide));
 
+        RCP<MultiVectorBase<SC> >thyraXModified = rcp_const_cast<MultiVectorBase<SC> >(ThyraUtils<SC,LO,GO,NO>::toThyraMultiVector(xSolutionModified));
+        RCP<MultiVectorBase<SC> >thyraBModified = rcp_const_cast<MultiVectorBase<SC> >(ThyraUtils<SC,LO,GO,NO>::toThyraMultiVector(xRightHandSideModified));
+        
         //-----------Set Coordinates and RepMap in ParameterList--------------------------
         RCP<ParameterList> plList =  sublist(parameterList,"Preconditioner Types");
         sublist(plList,"FROSch")->set("Dimension",Dimension);
@@ -360,6 +381,8 @@ int main(int argc, char *argv[])
             cout << endl;
         }
 
+        double start = MPI_Wtime();
+
         Comm->barrier(); if (Comm->getRank()==0) cout << "###################################\n# Stratimikos LinearSolverBuilder #\n###################################\n" << endl;
         Stratimikos::DefaultLinearSolverBuilder linearSolverBuilder;
         Stratimikos::enableFROSch<LO,GO,NO>(linearSolverBuilder);
@@ -367,28 +390,64 @@ int main(int argc, char *argv[])
 
         Comm->barrier(); if (Comm->getRank()==0) cout << "######################\n# Thyra PrepForSolve #\n######################\n" << endl;
 
-        RCP<LinearOpWithSolveFactoryBase<SC> > lowsFactory =
-        linearSolverBuilder.createLinearSolveStrategy("");
+        RCP<LinearOpWithSolveFactoryBase<SC> > solverFactory =
+        Thyra::createLinearSolveStrategy(linearSolverBuilder);
 
-        lowsFactory->setOStream(out);
-        lowsFactory->setVerbLevel(VERB_HIGH);
+        solverFactory->setOStream(out);
+        solverFactory->setVerbLevel(VERB_HIGH);
 
         Comm->barrier(); if (Comm->getRank()==0) cout << "###########################\n# Thyra LinearOpWithSolve #\n###########################" << endl;
 
-        RCP<LinearOpWithSolveBase<SC> > lows =
-        linearOpWithSolve(*lowsFactory, K_thyra);
+        // preconditioner
+        auto precFactory = solverFactory->getPreconditionerFactory();
+        RCP<Thyra::PreconditionerBase<SC> > prec = precFactory->createPrec();
+        Thyra::initializePrec<double>(*precFactory, K_thyra, prec.ptr());
+        // solver
+        Teuchos::RCP<Thyra::LinearOpWithSolveBase<SC> > solveOp = solverFactory->createOp(); 
+        Thyra::initializePreconditionedOp<double>(*solverFactory, K_thyra, prec, solveOp.ptr());    
 
+        Comm->barrier(); if (Comm->getRank()==0) cout << "###########################\n# Casting #\n###########################" << endl;
+        
+        //op to FROSch Operator
+        auto nonConstOp = rcp_const_cast<LinearOpBase<SC>>(prec->getUnspecifiedPrecOp());
+        auto froschLinearOp = rcp_dynamic_cast<Thyra::FROSchLinearOp<SC, LO, GO, NO>,LinearOpBase<SC>>(nonConstOp, true);
+        
+        Comm->barrier(); if (Comm->getRank()==0) cout << "###########################\n# PreSolve #\n###########################" << endl;
+        // Preconditioner is called from FROSch Operator
+        froschLinearOp->preSolve(thyraBModified.ptr());
+        
         Comm->barrier(); if (Comm->getRank()==0) cout << "\n#########\n# Solve #\n#########" << endl;
         SolveStatus<double> status =
-        solve<double>(*lows, Thyra::NOTRANS, *thyraB, thyraX.ptr());
+        solve<double>(*solveOp, Thyra::NOTRANS, *thyraBModified, thyraXModified.ptr());
+        FROSCH_ASSERT(status.solveStatus==SOLVE_STATUS_CONVERGED, "Solver didn't converge");
+        //Comm->barrier(); if (Comm->getRank()==0) cout << "the error is: - for the new system:" << thyraB->col(0)->norm_1() << " for the olds system " << thyraB->col(0)->norm_1()<<std::endl;
 
+        Comm->barrier(); if (Comm->getRank()==0) cout << "###########################\n# AfterSolve #\n###########################" << endl;
+        //K_thyra->apply(EOpTransp::NOTRANS, *thyraX, thyraBNew.ptr(),1.0,-1.0);
+        thyraX = thyraXModified->clone_mv();
+        froschLinearOp->afterSolve(thyraX.ptr());
+        // check if it solves the original problem:
+        K_thyra->apply(EOpTransp::NOTRANS,*thyraX, thyraB.ptr(),1.0,-1.0);
+        K_thyra->apply(EOpTransp::NOTRANS,*thyraXModified, thyraBModified.ptr(),1.0,-1.0);
+        SC residualModifiedSystem=norm(*(thyraBModified->col(0)));
+        SC residualOriginalSystem=norm(*(thyraB->col(0)));
+        Comm->barrier(); if (Comm->getRank()==0) cout << "the error is: - for the Modified system: "<<residualModifiedSystem << " - for the original system: "<< residualOriginalSystem <<std::endl;
+        //FROSCH_ASSERT(res)
         Comm->barrier(); if (Comm->getRank()==0) cout << "\n#############\n# Finished! #\n#############" << endl;
+
+        double end = MPI_Wtime();
+        if (Comm->getRank()==0) cout << "Solving the system took " << end - start << " seconds to run." << endl;
     }
+    
+
 
     CommWorld->barrier();
     stackedTimer->stop("Overlap Test");
     StackedTimer::OutputOptions options;
-    options.output_fraction = options.output_histogram = options.output_minmax = true;
+
+    options.output_fraction = true;
+    options.output_histogram = options.output_minmax = false;
+
     stackedTimer->report(*out,CommWorld,options);
 
     return(EXIT_SUCCESS);

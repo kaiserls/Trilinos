@@ -67,6 +67,7 @@ namespace FROSch {
         CoarseSolver_.reset();
     }
 
+    //TODO: Computes the coarse basis functions???
     template <class SC,class LO,class GO,class NO>
     int CoarseOperator<SC,LO,GO,NO>::compute()
     {
@@ -116,6 +117,8 @@ namespace FROSch {
         return 0;
     }
 
+    //TODO: Comment correct?
+    // Deletes all coarse basis functions and maps. The operator has to be recomputed ???(computed/initialized is untouched?)
     template <class SC,class LO,class GO,class NO>
     int CoarseOperator<SC,LO,GO,NO>::clearCoarseSpace()
     {
@@ -158,6 +161,7 @@ namespace FROSch {
         }
     }
 
+    //! Interpolate from coarse to fine grid
     template<class SC,class LO,class GO,class NO>
     void CoarseOperator<SC,LO,GO,NO>::applyPhiT(const XMultiVector& x,
                                                 XMultiVector& y) const
@@ -184,6 +188,7 @@ namespace FROSch {
         y = *XCoarseSolveTmp_;
     }
 
+    //! Solve problem on the coarse space
     template<class SC,class LO,class GO,class NO>
     void CoarseOperator<SC,LO,GO,NO>::applyCoarseSolve(XMultiVector& x,
                                                        XMultiVector& y,
@@ -203,6 +208,7 @@ namespace FROSch {
         y = *YTmp_;
     }
 
+    //! Interpolate from fine to coarse grid
     template<class SC,class LO,class GO,class NO>
     void CoarseOperator<SC,LO,GO,NO>::applyPhi(const XMultiVector& x,
                                                XMultiVector& y) const
@@ -244,6 +250,7 @@ namespace FROSch {
         }
     }
 
+    //! Returns the underlying CoarseSpace
     template<class SC,class LO,class GO,class NO>
     typename CoarseOperator<SC,LO,GO,NO>::CoarseSpacePtr CoarseOperator<SC,LO,GO,NO>::getCoarseSpace() const
     {

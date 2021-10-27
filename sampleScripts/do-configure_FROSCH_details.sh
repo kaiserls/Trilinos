@@ -1,0 +1,75 @@
+#!/bin/bash
+
+TYPE=RELEASE # RELEASE/DEBUG
+
+BASE_DIR=`dirname $PWD`
+INSTALL_DIR=$BASE_DIR/install
+
+#UMFPACK=/usr/local/ff-petsc/real
+INCLUDES=/usr/include
+LIBS=/usr/lib/x86_64-linux-gnu
+
+rm -rf CMake*
+
+cmake \
+    -D CMAKE_BUILD_TYPE:STRING=$TYPE \
+    -D CMAKE_INSTALL_PREFIX:STRING=$INSTALL_DIR \
+    -D BUILD_SHARED_LIBS:BOOL=OFF \
+    -D CMAKE_VERBOSE_MAKEFILE:BOOL=OFF \
+    -D Trilinos_ASSERT_MISSING_PACKAGES:BOOL=ON \
+    -D Trilinos_ENABLE_ALL_PACKAGES:BOOL=OFF \
+    -D Trilinos_ENABLE_ALL_OPTIONAL_PACKAGES:BOOL=OFF \
+    -D Trilinos_ENABLE_EXPLICIT_INSTANTIATION:BOOL=ON \
+    -D Tpetra_INST_INT_LONG_LONG:BOOL=ON \
+    -D Tpetra_INST_INT_INT:BOOL=OFF \
+    -D Trilinos_VERBOSE_CONFIGURE:BOOL=OFF \
+    -D Trilinos_ENABLE_AztecOO:BOOL=ON \
+    -D Trilinos_ENABLE_Amesos2:BOOL=ON \
+    -D Trilinos_ENABLE_Epetra:BOOL=ON \
+    -D Trilinos_ENABLE_EpetraExt:BOOL=ON \
+    -D Trilinos_ENABLE_Belos:BOOL=ON \
+    -D Trilinos_ENABLE_Ifpack:BOOL=ON \
+    -D Trilinos_ENABLE_Ifpack2:BOOL=OFF \
+    -D Trilinos_ENABLE_Tpetra:BOOL=ON \
+    -D Trilinos_ENABLE_ShyLU_DD:BOOL=ON \
+    -D ShyLU_DD_ENABLE_TESTS:BOOL=ON \
+    -D Trilinos_ENABLE_TESTS:BOOL=ON \
+    -D Trilinos_ENABLE_Stratimikos:BOOL=ON \
+    -D Trilinos_ENABLE_Thyra:BOOL=ON \
+    -D Trilinos_ENABLE_Galeri:BOOL=ON \
+    -D Trilinos_ENABLE_Zoltan2:BOOL=ON \
+    -D Trilinos_ENABLE_Teko:BOOL=ON \
+    \
+    -D TPL_ENABLE_MPI:BOOL=ON \
+    -D TPL_ENABLE_BLAS:BOOL=ON \
+    -D TPL_ENABLE_LAPACK:BOOL=ON \
+    -D TPL_ENABLE_UMFPACK:BOOL=ON \
+    -D TPL_ENABLE_SUPERLU:BOOL=ON \
+    -D TPL_ENABLE_MUMPS:BOOL=ON \
+    -D TPL_ENABLE_ParMETIS:BOOL=ON \
+    -D TPL_ENABLE_Boost:BOOL=ON \
+    -D TPL_ENABLE_HDF5:BOOL=ON \
+    \
+    -D KokkosKernels_ENABLE_TPL_CHOLMOD:BOOL=ON \
+    \
+    -D UMFPACK_LIBRARY_DIRS:PATH="$LIBS" \
+    -D UMFPACK_INCLUDE_DIRS:PATH=$INCLUDES/suitesparse/ \
+    -D TPL_SuperLU_LIBRARIES:STRING="$LIBS/libsuperlu.so" \
+    -D SuperLU_INCLUDE_DIRS:PATH=$INCLUDES/superlu/ \
+    -D MUMPS_INCLUDE_DIRS:PATH=$INCLUDES/ \
+    \
+    -D Amesos2_ENABLE_UMFPACK:BOOL=ON \
+    -D HAVE_AMESOS2_UMFPACK:BOOL=ON \
+    -D Amesos2_ENABLE_SUPERLU:BOOL=ON \
+    -D HAVE_AMESOS2_SUPERLU:BOOL=ON \
+    -D Amesos2_ENABLE_MUMPS:BOOL=ON \
+    -D HAVE_AMESOS2_MUMPS:BOOL=ON \
+    \
+    -D CMAKE_CXX_STANDARD:STRING=14 \
+    \
+   -D CMAKE_C_FLAGS:STRING="-DFROSCH_TIMER_DETAILS=2" \
+   -D CMAKE_CXX_FLAGS:STRING="-DFROSCH_TIMER_DETAILS=2" \
+    \
+    -D HAVE_XPETRA_TPETRA:BOOL=ON \
+    \
+$BASE_DIR

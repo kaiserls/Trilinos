@@ -44,6 +44,8 @@
 
 #include <FROSch_AlgebraicOverlappingOperator_decl.hpp>
 
+#include <FROSch_Debugging.hpp>
+
 
 namespace FROSch {
 
@@ -51,6 +53,12 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+    /**
+     * @brief Construct a new Algebraic Overlapping Operator object
+     * 
+     * @param k Pointer to the matrix of the global problem
+     * @param parameterList Link to the parameterlist storing parameters for the complete preconditioner
+     */
     template <class SC,class LO,class GO,class NO>
     AlgebraicOverlappingOperator<SC,LO,GO,NO>::AlgebraicOverlappingOperator(ConstXMatrixPtr k,
                                                                             ParameterListPtr parameterList) :
@@ -69,13 +77,9 @@ namespace FROSch {
     }
 
     template <class SC,class LO,class GO,class NO>
-    int AlgebraicOverlappingOperator<SC,LO,GO,NO>::initialize(int overlap,
-                                                              ConstXMapPtr repeatedMap)
+    void AlgebraicOverlappingOperator<SC,LO,GO,NO>::printParameterDescription() const
     {
-        FROSCH_TIMER_START_LEVELID(initializeTime,"AlgebraicOverlappingOperator::initialize");
-
-        if (this->Verbose_) {
-            cout
+        cout
             << "\n" << setw(FROSCH_OUTPUT_INDENT) << " "
             << setw(89) << "-----------------------------------------------------------------------------------------"
             << "\n" << setw(FROSCH_OUTPUT_INDENT) << " "
@@ -107,10 +111,34 @@ namespace FROSch {
             << "\n" << setw(FROSCH_OUTPUT_INDENT) << " "
             << setw(89) << "-----------------------------------------------------------------------------------------"
             << endl;
+    }
+
+    /**
+     * @brief Builds the overlapping matrix with given overlap and initializes the underlying OverlappingOperator.
+     *        It prepares import/export objects and calculates multiplicity of nodes if needed.
+     * 
+     * @param overlap The number of layers in the overlap of the domain decomposition
+     * @param repeatedMap This map is like the unique map from the domain decomposition but shares the interfaces across the corresponding ranks.
+     * @return int Returns 0 if successful.
+     * @post IsInitialized_ = true, IsComputed_ = false;
+     */
+    template <class SC,class LO,class GO,class NO>
+    int AlgebraicOverlappingOperator<SC,LO,GO,NO>::initialize(int overlap,
+                                                              ConstXMapPtr repeatedMap)
+    {
+        FROSCH_TIMER_START_LEVELID(initializeTime,"AlgebraicOverlappingOperator::initialize");
+
+        if (this->Verbose_) {
+            this->printParameterDescription();
         }
 
         if (repeatedMap.is_null()) repeatedMap = this->K_->getRangeMap();
-        this->buildOverlappingMatrices(overlap,repeatedMap);
+        if (this->ParameterList_->get("Fake Geometric Overlap", true)) {
+            this->buildOverlappingMatrices(overlap,repeatedMap);
+        } else {
+            this->buildOverlappingMatrices(overlap,this->K_->getRowMap());
+        }
+
         this->initializeOverlappingOperator();
 
         this->IsInitialized_ = true;
@@ -118,6 +146,8 @@ namespace FROSch {
         return 0; // RETURN VALUE!!!
     }
 
+    //! Prepares the operator to be used, call this after initialize.
+    //! Calls computeOverlappingOperator
     template <class SC,class LO,class GO,class NO>
     int AlgebraicOverlappingOperator<SC,LO,GO,NO>::compute()
     {
@@ -140,6 +170,8 @@ namespace FROSch {
         return "Algebraic Overlapping Operator";
     }
 
+    //! Construct local overlapping problem with the map repeatedMap from the global matrix K_ 
+    //! Builds the overlapping matrix with given overlap from the nonunique repeatedMap which shares node at the interface.
     template <class SC,class LO,class GO,class NO>
     int AlgebraicOverlappingOperator<SC,LO,GO,NO>::buildOverlappingMatrices(int overlap,
                                                                             ConstXMapPtr repeatedMap)
@@ -166,11 +198,14 @@ namespace FROSch {
         if (verbosity==All) {
             FROSCH_DETAILTIMER_START_LEVELID(printStatisticsTime,"print statistics");
 
+            // Global number of nodes
             global = this->OverlappingMap_->getMaxAllGlobalIndex();
+            // Handle the different indexing of epetra and the case of an empty map ???
             if (this->OverlappingMap_->lib()==UseEpetra || this->OverlappingMap_->getGlobalNumElements()>0) {
                 global += 1;
             }
 
+            // Generate statistics about the number of nodes in the different subdomains for the nonoverlapping domain decomposition (overlap 0)
             local = (LO) max((LO) this->OverlappingMap_->getNodeNumElements(),(LO) 0);
             reduceAll(*this->MpiComm_,REDUCE_SUM,GO(local),ptr(&sum));
             avg = max(sum/double(this->MpiComm_->getSize()),0.0);
@@ -212,7 +247,7 @@ namespace FROSch {
         ConstXCrsGraphPtr overlappingGraph = this->OverlappingMatrix_->getCrsGraph();
         for (int i=0; i<overlap; i++) {
             switch (AddingLayersStrategy_) {
-                case LayersFromGraph:
+                case LayersFromGraph://default
                     ExtendOverlapByOneLayer(overlappingGraph,this->OverlappingMap_,overlappingGraph,this->OverlappingMap_);
                     break;
 
@@ -228,6 +263,7 @@ namespace FROSch {
                     FROSCH_ASSERT(false,"FROSch::AlgebraicOverlappingOperator: Specify a valid strategy for adding layers.");
                     break;
             }
+            // Print statistics about the overlapping subdomain with the current overlap i+1
             if (verbosity==All) {
                 FROSCH_DETAILTIMER_START_LEVELID(printStatisticsTime,"print statistics");
                 local = (LO) max((LO) this->OverlappingMap_->getNodeNumElements(),(LO) 0);
@@ -281,17 +317,15 @@ namespace FROSch {
             }
         }
 
-        return 0;
-    }
-
-    template <class SC,class LO,class GO,class NO>
-    int AlgebraicOverlappingOperator<SC,LO,GO,NO>::updateLocalOverlappingMatrices()
-    {
-        FROSCH_DETAILTIMER_START_LEVELID(updateLocalOverlappingMatricesTime,"AlgebraicOverlappingOperator::updateLocalOverlappingMatrices");
-        if (this->IsComputed_) { // already computed once and we want to recycle the information. That is why we reset OverlappingMatrix_ to K_, because K_ has been reset at this point
-            this->OverlappingMatrix_ = this->K_;
+        switch (AddingLayersStrategy_) {
+            case LayersFromGraph://default
+                this->GlobalOverlappingGraph_ = overlappingGraph;
+                break;
+            default:
+                this->GlobalOverlappingGraph_ = this->OverlappingMatrix_->getCrsGraph();
+                break;
         }
-        this->OverlappingMatrix_ = ExtractLocalSubdomainMatrix(this->OverlappingMatrix_,this->OverlappingMap_);
+        
         return 0;
     }
 }

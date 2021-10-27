@@ -43,7 +43,7 @@
 #define _FROSCH_ONELEVELPRECONDITIONER_DECL_HPP
 
 #include <FROSch_SchwarzPreconditioner_def.hpp>
-
+#include <FROSch_HarmonicOverlappingOperator_def.hpp>
 
 namespace FROSch {
 
@@ -51,6 +51,7 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;    
 
+    //! A simple implementation of a SchwarzPreconditioner with one level.
     template <class SC = double,
               class LO = int,
               class GO = DefaultGlobalOrdinal,
@@ -66,13 +67,16 @@ namespace FROSch {
         using ConstXMatrixPtr                   = typename SchwarzPreconditioner<SC,LO,GO,NO>::ConstXMatrixPtr;
 
         using XMultiVector                      = typename SchwarzPreconditioner<SC,LO,GO,NO>::XMultiVector;
+        using XMultiVectorPtr                      = typename SchwarzPreconditioner<SC,LO,GO,NO>::XMultiVectorPtr;
 
         using ParameterListPtr                  = typename SchwarzPreconditioner<SC,LO,GO,NO>::ParameterListPtr;
 
+        using CombinedOperatorPtr               = typename SchwarzPreconditioner<SC,LO,GO,NO>::CombinedOperatorPtr;
         using SumOperatorPtr                    = typename SchwarzPreconditioner<SC,LO,GO,NO>::SumOperatorPtr;
         using MultiplicativeOperatorPtr         = typename SchwarzPreconditioner<SC,LO,GO,NO>::MultiplicativeOperatorPtr;
         using OverlappingOperatorPtr            = typename SchwarzPreconditioner<SC,LO,GO,NO>::OverlappingOperatorPtr;
         using AlgebraicOverlappingOperatorPtr   = typename SchwarzPreconditioner<SC,LO,GO,NO>::AlgebraicOverlappingOperatorPtr;
+        using HarmonicOverlappingOperatorPtr    = RCP<AlgebraicOverlappingOperator<SC,LO,GO,NO>>;
 
     public:
 
@@ -88,6 +92,9 @@ namespace FROSch {
                                ConstXMapPtr repeatedMap);
 
         virtual int compute();
+
+        virtual void preSolve(XMultiVector & rhs);
+        virtual void afterSolve(XMultiVector & lhs);
 
         virtual void apply(const XMultiVector &x,
                            XMultiVector &y,
@@ -110,10 +117,10 @@ namespace FROSch {
 
         ConstXMatrixPtr K_;
 
-        SumOperatorPtr SumOperator_;
-        MultiplicativeOperatorPtr MultiplicativeOperator_;
-        OverlappingOperatorPtr OverlappingOperator_;
-        bool UseMultiplicative_ = false;
+        CombinedOperatorPtr CombinedOperator_;  //! Either multiplicative or additive combination of operator on different levels.
+                                                //! In this preconditioner only one level exists.
+        OverlappingOperatorPtr OverlappingOperator_;//! The overlapping schwarz operator on the first level.
+                                                    //! Is also contained in the combined operator.
     };
 
 }
