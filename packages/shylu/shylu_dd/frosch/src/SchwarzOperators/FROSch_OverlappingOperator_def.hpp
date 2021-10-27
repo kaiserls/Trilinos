@@ -72,7 +72,9 @@ namespace FROSch {
         SubdomainSolver_.reset();
     }
 
-    // Y = alpha * A^mode * X + beta * Y
+    //! Y = alpha * A^mode * X + beta * Y
+    //TODO: Explain the different steps beforehand or in the code. Same could be achieved by creating
+    // more subfunctions and giving them good names.
     template <class SC,class LO,class GO,class NO>
     void OverlappingOperator<SC,LO,GO,NO>::apply(const XMultiVector &x,
                                                  XMultiVector &y,
@@ -85,6 +87,9 @@ namespace FROSch {
         FROSCH_ASSERT(this->IsComputed_,"FROSch::OverlappingOperator: OverlappingOperator has to be computed before calling apply()");
         if (XTmp_.is_null()) XTmp_ = MultiVectorFactory<SC,LO,GO,NO>::Build(x.getMap(),x.getNumVectors());
         *XTmp_ = x;
+
+        // Apply K first if the framework is not only used as preconditioner: P = M^-1 K
+        // If mode != NO_TRANS it is applied at the end
         if (!usePreconditionerOnly && mode == NO_TRANS) {
             this->K_->apply(x,*XTmp_,mode,ScalarTraits<SC>::one(),ScalarTraits<SC>::zero());
         }
@@ -161,9 +166,11 @@ namespace FROSch {
                     }
                 }
             }
-        } else {
+        } else { // All modes, excluding restricted
             XTmp_->doExport(*YOverlap_,*Scatter_,ADD);
         }
+        
+        // Divide the result by the number of subdomains which contributed to this value
         if (Combine_ == Averaging) {
             ConstSCVecPtr scaling = Multiplicity_->getData(0);
             for (UN j=0; j<XTmp_->getNumVectors(); j++) {
@@ -189,7 +196,7 @@ namespace FROSch {
             Multiplicity_ = MultiVectorFactory<SC,LO,GO,NO>::Build(this->getRangeMap(),1);
             XMultiVectorPtr multiplicityRepeated;
             multiplicityRepeated = MultiVectorFactory<SC,LO,GO,NO>::Build(OverlappingMap_,1);
-            multiplicityRepeated->putScalar(ScalarTraits<SC>::one());
+            multiplicityRepeated->putScalar(ScalarTraits<SC>::one()); // Every node has at least multiplicity one
             XExportPtr multiplicityExporter = ExportFactory<LO,GO,NO>::Build(multiplicityRepeated->getMap(),this->getRangeMap());
             Multiplicity_->doExport(*multiplicityRepeated,*multiplicityExporter,ADD);
         }
@@ -197,6 +204,7 @@ namespace FROSch {
         return 0; // RETURN VALUE
     }
 
+    //! Essentially prepares the subdomain solver to be used
     template <class SC,class LO,class GO,class NO>
     int OverlappingOperator<SC,LO,GO,NO>::computeOverlappingOperator()
     {

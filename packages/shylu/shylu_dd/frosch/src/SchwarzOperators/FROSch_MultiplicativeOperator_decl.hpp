@@ -51,6 +51,7 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+    //! Multiplicative combination of SchwarzOperators on different levels
     template <class SC = double,
               class LO = int,
               class GO = DefaultGlobalOrdinal,

@@ -53,6 +53,9 @@ namespace FROSch {
 
     enum AddingLayersStrategy {LayersFromMatrix=0,LayersFromGraph=1,LayersOld=2};
 
+    //! Implements the algebraical construction of the overlapping map from the given Matrix/Graph.
+    //! The AlgebraicOverlappingOperator needs no geometrical information about the employed discretization.
+    //! It retrieves all information needed to construct the local problem from the structure and values of the globally distributed matrix. 
     template <class SC = double,
               class LO = int,
               class GO = DefaultGlobalOrdinal,
@@ -102,6 +105,7 @@ namespace FROSch {
         virtual int updateLocalOverlappingMatrices();
 
 
+         //! The employed AddingLayersStrategy to construct the overlap
         AddingLayersStrategy AddingLayersStrategy_ = LayersFromGraph;
     };
 

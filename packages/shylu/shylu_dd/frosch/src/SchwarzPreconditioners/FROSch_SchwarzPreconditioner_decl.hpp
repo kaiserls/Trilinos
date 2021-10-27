@@ -54,6 +54,7 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+    //! Base class for all SchwarzPreconditioners. Mostly purely abstract/virtual functions.
     template <class SC = double,
               class LO = int,
               class GO = DefaultGlobalOrdinal,
@@ -148,12 +149,12 @@ namespace FROSch {
 
         ParameterListPtr ParameterList_;
 
-        bool UseTranspose_ = false;
+        bool UseTranspose_ = false;//TODO: Comment
         bool IsInitialized_ = false;
         bool IsComputed_ = false;
         bool Verbose_ = false;
 
-        ConstUN LevelID_ = 1;
+        ConstUN LevelID_ = 1;//TODO: Comment
     };
 
 }

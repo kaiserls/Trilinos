@@ -68,6 +68,8 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+    //! The CoarseOperator (P_0) solves a global but very coarse (therefore small) problem, providing a global coupling.
+    //! It accelerates the convergence in a fixpoint iteration / improves the condition number for iterative solvers.
     template <class SC = double,
               class LO = int,
               class GO = DefaultGlobalOrdinal,

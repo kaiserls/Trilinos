@@ -51,6 +51,13 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+    /*
+     * @brief //TODO: What is the difference between the subdomain matrix and the global matrix?
+     * 
+     * @param globalMatrix 
+     * @param map 
+     * @return RCP<const Matrix<SC,LO,GO,NO> > The extracted local subdomain matrix
+     */
     template <class SC,class LO,class GO,class NO>
     RCP<const Matrix<SC,LO,GO,NO> > ExtractLocalSubdomainMatrix(RCP<const Matrix<SC,LO,GO,NO> > globalMatrix,
                                                                 RCP<const Map<LO,GO,NO> > map)
@@ -87,6 +94,7 @@ namespace FROSch {
         return localSubdomainMatrix.getConst();
     }
 
+    //! Like ExtractLocalSubdomainMatrix(globalMatrix,map), but all entries will have the passed value
     template <class SC,class LO,class GO,class NO>
     RCP<const Matrix<SC,LO,GO,NO> > ExtractLocalSubdomainMatrix(RCP<const Matrix<SC,LO,GO,NO> > globalMatrix,
                                                                 RCP<const Map<LO,GO,NO> > map,
@@ -124,6 +132,7 @@ namespace FROSch {
         return localSubdomainMatrix.getConst();
     }
 
+    //! Like ExtractLocalSubdomainMatrix(globalMatrix,map), but replaces existing values.
     template <class SC,class LO,class GO,class NO>
     int UpdateLocalSubdomainMatrix(RCP<Matrix<SC,LO,GO,NO> > globalMatrix,
                                    RCP<Map<LO,GO,NO> > &map,
@@ -159,6 +168,8 @@ namespace FROSch {
         return 0;
     }
 
+    //TODO: Builds the submatrices for the inner nodes II, the interface/or outer nodes??? JJ and the "coupling" IJ,JI
+    //TODO: from the global Matrix k and the inner node list indI.
     template <class SC,class LO,class GO,class NO>
     int BuildSubmatrices(RCP<const Matrix<SC,LO,GO,NO> > k,
                          ArrayView<GO> indI,
@@ -239,6 +250,7 @@ namespace FROSch {
     }
 
 
+    //! Like BuildSubmatrices(k,indI,kII,kIJ,kJI,kJJ) but only build the inner node submatrix kII
     template <class SC,class LO,class GO,class NO>
     int BuildSubmatrix(RCP<Matrix<SC,LO,GO,NO> > k,
                        ArrayView<GO> indI,
@@ -279,6 +291,8 @@ namespace FROSch {
         return 0;
     }
 
+    //! Like BuildSubmatrix(RCP<Matrix<SC,LO,GO,NO> > k, ArrayView<GO> indI,RCP<Matrix<SC,LO,GO,NO> > &kII)
+    //! but operating only on a graph.
     template <class LO,class GO,class NO>
     int BuildSubgraph(RCP<CrsGraph<LO,GO,NO> > k,
                       ArrayView<GO> indI,
