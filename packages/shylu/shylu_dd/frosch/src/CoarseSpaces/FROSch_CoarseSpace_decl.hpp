@@ -56,6 +56,8 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+    // TODO: Comment
+    //! Calculates and stores the assembled basis functions and corresponding maps of a CoarseSpace
     template <class SC = double,
               class LO = int,
               class GO = DefaultGlobalOrdinal,

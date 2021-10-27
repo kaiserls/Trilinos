@@ -43,6 +43,7 @@
 #define _FROSCH_OVERLAPPINGOPERATOR_DECL_HPP
 
 #include <FROSch_SchwarzOperator_def.hpp>
+#include <FROSch_Mapper_def.hpp>
 
 
 namespace FROSch {
@@ -50,6 +51,8 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+    //! A SchwarzOperator which belongs to an overlapping domain decomposition.
+    //! This allows to implement the apply operation of the SchwarzOperator.
     template <class SC = double,
               class LO = int,
               class GO = DefaultGlobalOrdinal,
@@ -81,8 +84,12 @@ namespace FROSch {
         using ConstSCVecPtr         = typename SchwarzOperator<SC,LO,GO,NO>::ConstSCVecPtr;
 
         using UN                    = typename SchwarzOperator<SC,LO,GO,NO>::UN;
+        
+        using MapperPtr             = RCP<Mapper<SC,LO,GO,NO>>;
+        using CombinationType       = typename Mapper<SC,LO,GO,NO>::CombinationType;
 
     public:
+        using SchwarzOperator<SC,LO,GO,NO>::apply;
 
         OverlappingOperator(ConstXMatrixPtr k,
                             ParameterListPtr parameterList);
@@ -101,21 +108,21 @@ namespace FROSch {
                            SC beta=ScalarTraits<SC>::zero()) const;
 
     protected:
-
-        enum CombinationType {Averaging,Full,Restricted};
-
         virtual int initializeOverlappingOperator();
 
         virtual int initializeSubdomainSolver(ConstXMatrixPtr localMat);
 
         virtual int computeOverlappingOperator();
 
-        virtual int updateLocalOverlappingMatrices() = 0;
+        virtual int updateLocalOverlappingMatrices();
 
+        virtual void restrictFromInto(const XMultiVectorPtr source, XMultiVectorPtr & target) const;
+        virtual void prolongateFromInto(const XMultiVectorPtr source, XMultiVectorPtr target, const ConstXMapPtr uniqueMap) const;
+        int calculateMultiplicity();
 
-        ConstXMatrixPtr OverlappingMatrix_;
-
-        ConstXMapPtr OverlappingMap_;
+        //TODO: Rename. Code would be much easier to understand if "LocalOverlappingMatrix_" and GlobalOverlappingMap_"
+        ConstXMatrixPtr OverlappingMatrix_; //! Local overlapping matrix (neglecting the initialization with the globally distributed matrix K_)
+        ConstXMapPtr OverlappingMap_; //! Distribution of the nodes/node indices over the ranks
 
         // Temp Vectors for apply()
         mutable XMultiVectorPtr XTmp_;
@@ -123,13 +130,15 @@ namespace FROSch {
         mutable XMultiVectorPtr XOverlapTmp_;
         mutable XMultiVectorPtr YOverlap_;
 
-        XImportPtr Scatter_;
+        XImportPtr Scatter_; //! TODO: Comment: Describes how to exchange data between the overlapping map and the global uniquely distributed map???
 
-        SolverPtr SubdomainSolver_;
+        SolverPtr SubdomainSolver_; //! Solver for the local problem on this subdomain. Used each time the operator is applied.
 
-        XMultiVectorPtr Multiplicity_;
+        XMultiVectorPtr Multiplicity_; //! Stores in how many domains each node is contained.
 
-        CombinationType Combine_ = Averaging;
+        CombinationType Combine_ = CombinationType::Averaging;
+
+        MapperPtr Mapper_;
     };
 
 }

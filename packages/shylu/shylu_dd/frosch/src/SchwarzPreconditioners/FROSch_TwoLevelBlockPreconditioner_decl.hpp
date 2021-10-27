@@ -51,6 +51,7 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+    //TODO: Explain class + difference to non block version
     template <class SC = double,
               class LO = int,
               class GO = DefaultGlobalOrdinal,

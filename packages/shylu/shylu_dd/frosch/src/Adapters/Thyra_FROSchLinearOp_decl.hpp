@@ -131,6 +131,10 @@ namespace Thyra {
                              bool bIsEpetra,
                              bool bIsTpetra);
 
+        void preSolve(Ptr<MultiVectorBase<SC>> rhs);
+
+        void afterSolve(Ptr<MultiVectorBase<SC>> lhs);
+
         /** \brief Get embedded non-const Operator. */
         RCP<Operator<SC,LO,GO,NO> > getXpetraOperator();
 

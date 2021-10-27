@@ -39,53 +39,78 @@
 // ************************************************************************
 //@HEADER
 
-#ifndef _FROSCH_SUMOPERATOR_DECL_HPP
-#define _FROSCH_SUMOPERATOR_DECL_HPP
+#ifndef _FROSCH_DEBUGGING_HPP
+#define _FROSCH_DEBUGGING_HPP
 
-#include <FROSch_CombinedOperator_def.hpp>
+#include <fstream>
 
-
-namespace FROSch {
-
+namespace FROSch{
     using namespace std;
-    using namespace Teuchos;
-    using namespace Xpetra;
 
-    //! Additive combination of SchwarzOperators
-    template <class SC = double,
-              class LO = int,
-              class GO = DefaultGlobalOrdinal,
-              class NO = KokkosClassic::DefaultNode::DefaultNodeType>
-    class SumOperator : public CombinedOperator<SC,LO,GO,NO> {
-
-    protected:
-
-        using CommPtr                   = typename CombinedOperator<SC,LO,GO,NO>::CommPtr;
-
-        using XMapPtr                   = typename CombinedOperator<SC,LO,GO,NO>::XMapPtr;
-        using ConstXMapPtr              = typename SchwarzOperator<SC,LO,GO,NO>::ConstXMapPtr;
-
-        using XMultiVector              = typename CombinedOperator<SC,LO,GO,NO>::XMultiVector;
-        using XMultiVectorPtr           = typename CombinedOperator<SC,LO,GO,NO>::XMultiVectorPtr;
-
-        using SchwarzOperatorPtr        = typename CombinedOperator<SC,LO,GO,NO>::SchwarzOperatorPtr;
-        using SchwarzOperatorPtrVec     = typename CombinedOperator<SC,LO,GO,NO>::SchwarzOperatorPtrVec;
-        using SchwarzOperatorPtrVecPtr  = typename CombinedOperator<SC,LO,GO,NO>::SchwarzOperatorPtrVecPtr;
-
-        using UN                        = typename CombinedOperator<SC,LO,GO,NO>::UN;
-
-        using BoolVec                   = typename CombinedOperator<SC,LO,GO,NO>::BoolVec;
-    
-    public:
-        using CombinedOperator<SC,LO,GO,NO>::CombinedOperator;
-        //! Apply the SumOperator by applying the individual SchwarzOperators and combining the results in an additive manner
-        void apply(const XMultiVector &x,
-                           XMultiVector &y,
-                           bool usePreconditionerOnly,
-                           ETransp mode=NO_TRANS,
-                           SC alpha=ScalarTraits<SC>::one(),
-                           SC beta=ScalarTraits<SC>::zero()) const;
-    };
+inline void writeMeta(int nx, int ny, int processes){
+    ofstream myfile;
+    myfile.open ("meta.txt");
+    myfile << nx << " "<<ny <<" " <<processes;
+    myfile.close();
 }
 
+template <class map_type>
+inline void writeMeta(const map_type globalUniqueMap){
+    int proc =  globalUniqueMap->getComm()->getRank();
+    // Write meta once
+    if(proc == 0){
+        int n = int(sqrt(globalUniqueMap->getGlobalNumElements()));//unique map
+        int procs = globalUniqueMap ->getComm()->getSize();
+        writeMeta(n,n, procs);
+    }
+}
+
+template <class vector_type, class map_type>
+inline void outputWithOtherMap(const vector_type vec, const map_type otherMap, string name="", int it=-1){
+    auto map = otherMap;
+    int proc = map->getComm()->getRank();
+
+    size_t n = 4;
+    std::ostringstream ss;
+    if(it!=-1){
+        ss<<"_it";
+        ss << std::setw(n) << std::setfill('0') << to_string(it);
+    }
+    std::string s = ss.str();
+
+    ofstream myfile;
+    string appendix = "_"+name + "_p" + to_string(proc)+s+".txt";
+    myfile.open("nodes"+appendix);
+    for(unsigned node: map->getNodeElementList()){
+        myfile<<node<<" ";
+    }
+    myfile.close();
+    myfile.open ("values"+appendix);
+    auto values = vec->getData(0);
+    for (unsigned j=0; j<map->getNodeNumElements(); j++) {
+        myfile<<values[j]<<" ";
+    }
+    myfile.close();
+}
+
+template <class vector_type>
+inline void output(const vector_type vec, string name="", int it=-1){
+    auto map = vec->getMap();
+    outputWithOtherMap(vec, map, name, it);
+}
+
+template <class map_type>
+inline void output_map(const map_type map, string name=""){
+    int proc = map->getComm()->getRank();
+    
+    ofstream myfile;
+    string appendix = "_"+name + "_p" + to_string(proc)+".txt";
+    myfile.open("nodes"+appendix);
+    for(unsigned node: map->getNodeElementList()){
+        myfile<<node<<" ";
+    }
+    myfile.close();
+}
+
+}
 #endif

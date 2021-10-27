@@ -48,6 +48,8 @@
 #include <Xpetra_Import.hpp>
 #include <Xpetra_ImportFactory.hpp>
 
+#include <FROSch_Debugging.hpp>
+
 
 namespace FROSch {
 
@@ -55,6 +57,7 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+    //! TODO: What does this class represent and what is the meaning of the member variables
     template <typename LO,typename GO>
     OverlappingData<LO,GO>::OverlappingData(GO gid,
                                             int pid,
@@ -66,6 +69,7 @@ namespace FROSch {
 
     }
 
+    //! TODO: Doc
     template <typename LO,typename GO>
     int OverlappingData<LO,GO>::Merge(const RCP<OverlappingData<LO,GO> > od) const
     {
@@ -79,6 +83,7 @@ namespace FROSch {
         return 0;
     }
 
+    //! Removes values occuring multiple times in odList by sorting and deleting neighbouring equal values.
     template <typename LO,typename GO>
     int MergeList(Array<RCP<OverlappingData<LO,GO> > > &odList)
     {
@@ -206,6 +211,7 @@ namespace FROSch {
         return minidx;
     }
 
+    //! Writes the given matrix out to the filesystem using the matrix market format.
     template <class SC, class LO, class GO, class NO>
     void writeMM(std::string fileName, Teuchos::RCP<Xpetra::Matrix<SC,LO,GO,NO> > &matrix_)
     {
@@ -226,6 +232,7 @@ namespace FROSch {
         tpetraWriter.writeSparseFile(fileName, tpetraMat, "matrix", "");
     }
 
+    //! Reads a matrix from the filesystem stored in the matrix market format.
     template <class SC, class LO, class GO, class NO>
     void readMM(std::string fileName, Teuchos::RCP<Xpetra::Matrix<SC,LO,GO,NO> > &matrix_,RCP<const Comm<int> > &comm)
     {
@@ -476,6 +483,7 @@ namespace FROSch {
         }
     }
 
+    //! Calculates an array of repeated submaps from the passed matrix and subMaps using BuildSubmatrix(matrix,indI,subMatrixII)
     template <class SC,class LO,class GO,class NO>
     ArrayRCP<RCP<const Map<LO,GO,NO> > > BuildRepeatedSubMaps(RCP<const Matrix<SC,LO,GO,NO> > matrix,
                                                               ArrayRCP<RCP<const Map<LO,GO,NO> > > subMaps)
@@ -494,6 +502,7 @@ namespace FROSch {
         return repeatedSubMaps;
     }
 
+    //! Like BuildRepeatedSubMaps(matrix,subMaps) but operating only on a graph
     template <class LO,class GO,class NO>
     ArrayRCP<RCP<const Map<LO,GO,NO> > > BuildRepeatedSubMaps(RCP<const CrsGraph<LO,GO,NO> > graph,
                                                               ArrayRCP<RCP<const Map<LO,GO,NO> > > subMaps)
@@ -718,9 +727,12 @@ namespace FROSch {
         return BuildRepeatedMapNonConst(matrix).getConst();
     }
 
+    //TODO: Comment on this function
+    //! Builds the repeatedMap sharing nodes on the interface from the unique rowmap of the graph???
     template <class LO,class GO,class NO>
     RCP<Map<LO,GO,NO> > BuildRepeatedMapNonConst(RCP<const CrsGraph<LO,GO,NO> > graph)
     {
+        // Init and extend overlap by one to have interface on each graph
         FROSCH_DETAILTIMER_START(buildRepeatedMapNonConstTime,"BuildRepeatedMapNonConst");
         const GO INVALID = Teuchos::OrdinalTraits<GO>::invalid();
         RCP<const Map<LO,GO,NO> > uniqueMap = graph->getRowMap();
@@ -874,6 +886,18 @@ namespace FROSch {
     }
     */
 
+    //TODO: Comment/Correct doc comment
+    /**
+     * @brief All nodes adjacent to the ones in the inputMap are recognized by inspecting the inputMatrix values.
+     *  They are added to the outputMap together with all nodes currently in the inputMap
+     * 
+     * @param inputMatrix ??? matrix distributed according to the current subdomain and therefore the input map
+     * @param inputMap map defining the current subdomain
+     * @param outputMatrix ??? Difference to inputMatrix?
+     * @param outputMap map defining the new subdomain with one new layer over overlapping elements/nodes
+     * @return int 0 if successful
+     * \remarks The outputMap is ordered when using this method (the old implementation). This leads to a speedup for some solvers.
+     */
     template <class SC,class LO,class GO,class NO>
     int ExtendOverlapByOneLayer_Old(RCP<const Matrix<SC,LO,GO,NO> > inputMatrix,
                                     RCP<const Map<LO,GO,NO> > inputMap,
@@ -904,6 +928,17 @@ namespace FROSch {
         return 0;
     }
 
+    /**
+     * @brief All nodes adjacent to the ones in the inputMap are recognized by inspecting the inputMatrix values
+     *  and added to the outputMap together with all nodes currently in the inputMap
+     * 
+     * @param inputMatrix The distributed system matrix
+     * @param inputMap Map defining the current subdomain
+     * @param outputMatrix Distributed Matrix having the row distribution defined by the input map
+     * @param outputMap The column map of the output matrix, defining the !possible next! new subdomain with one new layer over overlapping elements/nodes
+     * @return int 0 if successful
+     * \remarks The outputMap is not ordered. However the implementation is much simpler than ExtendOverlapByOneLayer_Old.
+     */
     template <class SC,class LO,class GO,class NO>
     int ExtendOverlapByOneLayer(RCP<const Matrix<SC,LO,GO,NO> > inputMatrix,
                                 RCP<const Map<LO,GO,NO> > inputMap,
@@ -922,6 +957,7 @@ namespace FROSch {
         return 0;
     }
 
+    //! Like  ExtendOverlapByOneLayer(inputMatrix,inputMap, outMatrix, outputMap) but operating only on the graph
     template <class LO,class GO,class NO>
     int ExtendOverlapByOneLayer(RCP<const CrsGraph<LO,GO,NO> > inputGraph,
                                 RCP<const Map<LO,GO,NO> > inputMap,
@@ -939,7 +975,8 @@ namespace FROSch {
 
         return 0;
     }
-
+    
+    //! Returns a map which has the same distribution as the inputMap, but is ordered by the global Index.
     template <class LO,class GO,class NO>
     RCP<const Map<LO,GO,NO> > SortMapByGlobalIndex(RCP<const Map<LO,GO,NO> > inputMap)
     {
@@ -951,6 +988,7 @@ namespace FROSch {
         return MapFactory<LO,GO,NO>::Build(inputMap->lib(),INVALID,globalIDs(),0,inputMap->getComm());
     }
 
+    //TODO: Comment
     template <class LO,class GO,class NO>
     RCP<Map<LO,GO,NO> > AssembleMaps(ArrayView<RCP<const Map<LO,GO,NO> > > mapVector,
                                      ArrayRCP<ArrayRCP<LO> > &partMappings)
@@ -1043,6 +1081,7 @@ namespace FROSch {
         return MapFactory<LO,GO,NO>::Build(mapVector[0]->lib(),INVALID,assembledMapTmp(),0,mapVector[0]->getComm());
     }
 
+    //TODO: Comment
     template <class LO,class GO,class NO>
     RCP<Map<LO,GO,NO> > AssembleSubdomainMap(unsigned numberOfBlocks,
                                              ArrayRCP<ArrayRCP<RCP<const Map<LO,GO,NO> > > > dofsMaps,
@@ -1073,6 +1112,7 @@ namespace FROSch {
         return MapFactory<LO,GO,NO>::Build(dofsMaps[0][0]->lib(),INVALID,mapVector(),0,dofsMaps[0][0]->getComm());
     }
 
+    //TODO: Comment
     template <class LO,class GO,class NO>
     RCP<Map<LO,GO,NO> > MergeMapsNonConst(ArrayRCP<RCP<const Map<LO,GO,NO> > > mapVector)
     {
@@ -1104,6 +1144,7 @@ namespace FROSch {
         return MergeMapsNonConst(mapVector).getConst();
     }
 
+    //TODO: Comment
     template <class LO,class GO,class NO>
     int BuildDofMapsVec(const ArrayRCP<RCP<const Map<LO,GO,NO> > > mapVec,
                         ArrayRCP<unsigned> dofsPerNodeVec,
@@ -1126,6 +1167,7 @@ namespace FROSch {
     }
 
 
+    //TODO: Comment
     template <class LO,class GO,class NO>
     int BuildDofMaps(const RCP<const Map<LO,GO,NO> > map,
                      unsigned dofsPerNode,
@@ -1173,6 +1215,7 @@ namespace FROSch {
         return 0;
     }
 
+    //TODO: Correct this //! Generates a map containing unique globalIDs for all dofs and nodes from the array of dofMaps which are only unique for one type of dofs
     template <class LO,class GO,class NO>
     RCP<const Map<LO,GO,NO> > BuildMapFromDofMaps(const ArrayRCP<RCP<const Map<LO,GO,NO> > > &dofMaps,
                                                   unsigned dofsPerNode,
@@ -1208,6 +1251,7 @@ namespace FROSch {
         return MapFactory<LO,GO,NO>::Build(dofMaps[0]->lib(),INVALID,globalIDs(),0,dofMaps[0]->getComm());
     }
 
+    //TODO: Correct this //! Generates a map containing unique globalIDs for all dofs and nodes from the nodesMaps which are only unique for one node
     template <class LO,class GO,class NO>
     RCP<Map<LO,GO,NO> > BuildMapFromNodeMap(RCP<const Map<LO,GO,NO> > &nodesMap,
                                             unsigned dofsPerNode,
@@ -1395,6 +1439,8 @@ namespace FROSch {
         return oneEntryOnlyRows;
     }
 
+    //! Returns array containg the globalIndices of the rows of the graph which only contain one index.
+    //! Used to find dirichlet entries
     template <class LO,class GO,class NO>
     ArrayRCP<GO> FindOneEntryOnlyRowsGlobal(RCP<const CrsGraph<LO,GO,NO> > graph,
                                             RCP<const Map<LO,GO,NO> > repeatedMap)
@@ -1469,6 +1515,7 @@ namespace FROSch {
         v.erase(unique(v.begin(),v.end()),v.end());
     }
 
+    //! Modified gram schmidt procedure on the vectors of the multivector. zero contains the indices for linear dependent vectors which are zero after gram schmidt.
     template <class SC, class LO,class GO,class NO>
     RCP<MultiVector<SC,LO,GO,NO> > ModifiedGramSchmidt(RCP<const MultiVector<SC,LO,GO,NO> > multiVector,
                                                        ArrayView<unsigned> zero)
@@ -1525,6 +1572,7 @@ namespace FROSch {
         return resultMultiVector;
     }
 
+    //TODO: Comment
     template <class SC, class LO,class GO,class NO>
     RCP<const MultiVector<SC,LO,GO,NO> > BuildNullSpace(unsigned dimension,
                                                         const NullSpaceType nullSpaceType,
@@ -1593,6 +1641,17 @@ namespace FROSch {
         }
         return nullSpaceBasis;
     }
+
+    template <class SC, class LO, class GO, class NO>
+    const RCP<MultiVector<SC,LO,GO,NO>> toXpetra(const Ptr<Thyra::MultiVectorBase<SC>> &X_inout){
+        const RCP<const Tpetra::MultiVector<SC,LO,GO,NO> > xTpMultVec = Thyra::TpetraOperatorVectorExtraction<SC,LO,GO,NO>::getConstTpetraMultiVector(rcpFromPtr(X_inout));
+        TEUCHOS_TEST_FOR_EXCEPT(is_null(xTpMultVec));
+        RCP<Tpetra::MultiVector<SC,LO,GO,NO> > tpNonConstMultVec = rcp_const_cast<Tpetra::MultiVector<SC,LO,GO,NO> >(xTpMultVec);
+        TEUCHOS_TEST_FOR_EXCEPT(is_null(tpNonConstMultVec));
+        const RCP<Xpetra::MultiVector<SC,LO,GO,NO> > xX = rcp(new Xpetra::TpetraMultiVector<SC,LO,GO,NO>(tpNonConstMultVec));
+        TEUCHOS_TEST_FOR_EXCEPT(is_null(xX));
+        return xX;
+    }     
 
 #ifdef HAVE_SHYLU_DDFROSCH_EPETRA
     template <class SC,class LO,class GO,class NO>

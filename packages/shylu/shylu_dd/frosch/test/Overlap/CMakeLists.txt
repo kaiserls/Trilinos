@@ -219,3 +219,60 @@ ARGS "--M=5 --DIM=3 --O=2 --DPN=3 --PLIST=ParameterLists/ParameterList_OneLevelP
 COMM mpi
 NUM_MPI_PROCS 8
 )
+
+## Harmonic
+TRIBITS_ADD_TEST(
+overlap
+NAME test_overlap_Matrix_DIM2_DPN1_TPETRA_CG
+ARGS "--M=5 --DIM=2 --O=2 --DPN=1 --PLIST=ParameterLists/ParameterList_OneLevelPreconditioner_cg.xml --USETPETRA"
+COMM mpi
+NUM_MPI_PROCS 4
+)
+
+TRIBITS_ADD_TEST(
+overlap
+NAME test_overlap_Matrix_DIM2_DPN1_TPETRA_CG_NONREPEATED
+ARGS "--M=5 --DIM=2 --O=2 --DPN=1 --PLIST=ParameterLists/ParameterList_OneLevelPreconditioner_cg_NonRepeated.xml --USETPETRA"
+COMM mpi
+NUM_MPI_PROCS 4
+)
+
+TRIBITS_ADD_TEST(
+overlap
+NAME test_overlap_Matrix_DIM2_DPN1_TPETRA_ASHO
+ARGS "--M=5 --DIM=2 --O=2 --DPN=1 --PLIST=ParameterLists/ParameterList_OneLevelPreconditioner_asho.xml --USETPETRA"
+COMM mpi
+NUM_MPI_PROCS 4
+)
+
+TRIBITS_ADD_TEST(
+overlap
+NAME test_overlap_Matrix_DIM2_DPN1_TPETRA_RAS
+ARGS "--M=5 --DIM=2 --O=2 --DPN=1 --PLIST=ParameterLists/ParameterList_OneLevelPreconditioner_ras.xml --USETPETRA"
+COMM mpi
+NUM_MPI_PROCS 4
+)
+
+TRIBITS_ADD_TEST(
+overlap
+NAME test_overlap_Matrix_DIM2_DPN1_TPETRA_RASHO
+ARGS "--M=5 --DIM=2 --O=2 --DPN=1 --PLIST=ParameterLists/ParameterList_OneLevelPreconditioner_rasho.xml --USETPETRA"
+COMM mpi
+NUM_MPI_PROCS 4
+)
+
+TRIBITS_ADD_TEST(
+overlap
+NAME test_overlap_Matrix_DIM2_DPN1_TPETRA_ASHO_ONOVERLAPPING
+ARGS "--M=5 --DIM=2 --O=2 --DPN=1 --PLIST=ParameterLists/ParameterList_OneLevelPreconditioner_asho_onOverlapping.xml --USETPETRA"
+COMM mpi
+NUM_MPI_PROCS 4
+)
+
+TRIBITS_ADD_TEST(
+overlap
+NAME test_overlap_Matrix_DIM2_DPN1_TPETRA_ASHO_BYMULTIPLICITY
+ARGS "--M=5 --DIM=2 --O=2 --DPN=1 --PLIST=ParameterLists/ParameterList_OneLevelPreconditioner_asho_byMultiplicity.xml --USETPETRA"
+COMM mpi
+NUM_MPI_PROCS 4
+)

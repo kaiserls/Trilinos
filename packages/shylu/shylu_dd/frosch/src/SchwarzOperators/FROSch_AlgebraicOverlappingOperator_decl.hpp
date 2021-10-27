@@ -53,6 +53,9 @@ namespace FROSch {
 
     enum AddingLayersStrategy {LayersFromMatrix=0,LayersFromGraph=1,LayersOld=2};
 
+    //! Implements the algebraical construction of the overlapping map from the given Matrix/Graph.
+    //! The AlgebraicOverlappingOperator needs no geometrical information about the employed discretization.
+    //! It retrieves all information needed to construct the local problem from the structure and values of the globally distributed matrix. 
     template <class SC = double,
               class LO = int,
               class GO = DefaultGlobalOrdinal,
@@ -83,15 +86,17 @@ namespace FROSch {
             FROSCH_ASSERT(false,"AlgebraicOverlappingOperator cannot be built without input parameters.");
         };
 
-        int initialize(int overlap,
+        virtual int initialize(int overlap,
                        ConstXMapPtr repeatedMap = null);
 
-        int compute();
+        virtual int compute();
 
-        void describe(FancyOStream &out,
+        virtual void describe(FancyOStream &out,
                       const EVerbosityLevel verbLevel=Describable::verbLevel_default) const;
 
-        string description() const;
+        virtual string description() const;
+
+        virtual void printParameterDescription() const;
 
     protected:
 
@@ -103,6 +108,8 @@ namespace FROSch {
 
         virtual void extractLocalSubdomainMatrix_Symbolic();
 
+        RCP<const Xpetra::CrsGraph<LO,GO,NO>> GlobalOverlappingGraph_; //! Globally distributed graph of the overlapping matrix
+         //! The employed AddingLayersStrategy to construct the overlap
         AddingLayersStrategy AddingLayersStrategy_ = LayersFromGraph;
     };
 

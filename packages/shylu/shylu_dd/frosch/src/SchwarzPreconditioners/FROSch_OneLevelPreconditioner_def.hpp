@@ -55,28 +55,27 @@ namespace FROSch {
     OneLevelPreconditioner<SC,LO,GO,NO>::OneLevelPreconditioner(ConstXMatrixPtr k,
                                                                 ParameterListPtr parameterList) :
     SchwarzPreconditioner<SC,LO,GO,NO> (parameterList,k->getRangeMap()->getComm()),
-    K_ (k),
-    SumOperator_ (new SumOperator<SC,LO,GO,NO>(k->getRangeMap()->getComm())),
-    MultiplicativeOperator_ (new MultiplicativeOperator<SC,LO,GO,NO>(k,parameterList)),
-    OverlappingOperator_ ()
+    K_ (k), OverlappingOperator_ ()
     {
         FROSCH_DETAILTIMER_START_LEVELID(oneLevelPreconditionerTime,"OneLevelPreconditioner::OneLevelPreconditioner");
-        if (!this->ParameterList_->get("OverlappingOperator Type","AlgebraicOverlappingOperator").compare("AlgebraicOverlappingOperator")) {
+        string OverlappingOperatorType = this->ParameterList_->get("OverlappingOperator Type","AlgebraicOverlappingOperator");
+        if (!OverlappingOperatorType.compare("AlgebraicOverlappingOperator")) {
             // Set the LevelID in the sublist
             parameterList->sublist("AlgebraicOverlappingOperator").set("Level ID",this->LevelID_);
             OverlappingOperator_ = AlgebraicOverlappingOperatorPtr(new AlgebraicOverlappingOperator<SC,LO,GO,NO>(k,sublist(parameterList,"AlgebraicOverlappingOperator")));
-        } else {
+        } else if(!OverlappingOperatorType.compare("HarmonicOverlappingOperator")) {
+            // Set the LevelID in the sublist
+            parameterList->sublist("HarmonicOverlappingOperator").set("Level ID",this->LevelID_);
+            OverlappingOperator_ = HarmonicOverlappingOperatorPtr(new HarmonicOverlappingOperator<SC,LO,GO,NO>(k,sublist(parameterList,"HarmonicOverlappingOperator")));
+        } else{
             FROSCH_ASSERT(false,"OverlappingOperator Type unkown.");
         }
         if (!this->ParameterList_->get("Level Combination","Additive").compare("Multiplicative")) {
-            UseMultiplicative_ = true;
+            CombinedOperator_ = RCP<MultiplicativeOperator<SC,LO,GO,NO>>(new MultiplicativeOperator<SC,LO,GO,NO>(k,parameterList));
+        } else{
+            CombinedOperator_ = RCP<SumOperator<SC,LO,GO,NO>>(new SumOperator<SC,LO,GO,NO>(k->getRangeMap()->getComm()));
         }
-        if (UseMultiplicative_) {
-            MultiplicativeOperator_->addOperator(OverlappingOperator_);
-        } else {
-            SumOperator_->addOperator(OverlappingOperator_);
-        }
-
+        CombinedOperator_->addOperator(OverlappingOperator_);
     }
 
     template <class SC,class LO,class GO,class NO>
@@ -109,9 +108,13 @@ namespace FROSch {
         if (overlap<0) {
             overlap = this->ParameterList_->get("Overlap",1);
         }
-        if (!this->ParameterList_->get("OverlappingOperator Type","AlgebraicOverlappingOperator").compare("AlgebraicOverlappingOperator")) {
+        string OverlappingOperatorType = this->ParameterList_->get("OverlappingOperator Type","AlgebraicOverlappingOperator");
+        if (!OverlappingOperatorType.compare("AlgebraicOverlappingOperator")) {
             AlgebraicOverlappingOperatorPtr algebraicOverlappigOperator = rcp_static_cast<AlgebraicOverlappingOperator<SC,LO,GO,NO> >(OverlappingOperator_);
             ret = algebraicOverlappigOperator->initialize(overlap,repeatedMap);
+        } else if (!OverlappingOperatorType.compare("HarmonicOverlappingOperator")) {
+            HarmonicOverlappingOperatorPtr harmonicOverlappigOperator = rcp_static_cast<HarmonicOverlappingOperator<SC,LO,GO,NO> >(OverlappingOperator_);
+            ret = harmonicOverlappigOperator->initialize(overlap,repeatedMap);
         } else {
             FROSCH_ASSERT(false,"OverlappingOperator Type unkown.");
         }
@@ -124,6 +127,16 @@ namespace FROSch {
         FROSCH_TIMER_START_LEVELID(computeTime,"OneLevelPreconditioner::compute");
         return OverlappingOperator_->compute();
     }
+    
+    template <class SC,class LO,class GO,class NO>
+    void OneLevelPreconditioner<SC,LO,GO,NO>::preSolve(XMultiVector & rhs){
+        OverlappingOperator_->preSolve(rhs);
+    }
+
+    template <class SC,class LO,class GO,class NO>
+    void OneLevelPreconditioner<SC,LO,GO,NO>::afterSolve(XMultiVector & lhs){
+        OverlappingOperator_->afterSolve(lhs);
+    }
 
     template <class SC,class LO,class GO,class NO>
     void OneLevelPreconditioner<SC,LO,GO,NO>::apply(const XMultiVector &x,
@@ -133,12 +146,7 @@ namespace FROSch {
                                                     SC beta) const
     {
         FROSCH_TIMER_START_LEVELID(applyTime,"OneLevelPreconditioner::apply");
-        if (UseMultiplicative_) {
-            return MultiplicativeOperator_->apply(x,y,true,mode,alpha,beta);
-        }
-        else{
-            return SumOperator_->apply(x,y,true,mode,alpha,beta);
-        }
+        return CombinedOperator_->apply(x,y,true,mode,alpha,beta);
     }
 
     template <class SC,class LO,class GO,class NO>
@@ -157,13 +165,7 @@ namespace FROSch {
     void OneLevelPreconditioner<SC,LO,GO,NO>::describe(FancyOStream &out,
                                                        const EVerbosityLevel verbLevel) const
     {
-        if (UseMultiplicative_) {
-            MultiplicativeOperator_->describe(out,verbLevel);
-        }
-        else{
-            SumOperator_->describe(out,verbLevel);
-        }
-
+        CombinedOperator_->describe(out,verbLevel);
     }
 
     template <class SC,class LO,class GO,class NO>

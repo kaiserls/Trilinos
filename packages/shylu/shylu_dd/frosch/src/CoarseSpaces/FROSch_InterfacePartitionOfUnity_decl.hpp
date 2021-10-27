@@ -50,6 +50,8 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+    //! This class represents a partition of unity on the interface of a domain decomposition.
+    //! It is still abstract and therefore can't be instanciated.
     template <class SC = double,
               class LO = int,
               class GO = DefaultGlobalOrdinal,
