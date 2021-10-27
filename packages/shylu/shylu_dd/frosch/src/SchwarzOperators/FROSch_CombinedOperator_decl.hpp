@@ -39,64 +39,66 @@
 // ************************************************************************
 //@HEADER
 
-#ifndef _FROSCH_ONELEVELPRECONDITIONER_DECL_HPP
-#define _FROSCH_ONELEVELPRECONDITIONER_DECL_HPP
+#ifndef _FROSCH_COMBINEDOPERATOR_DECL_HPP
+#define _FROSCH_COMBINEDOPERATOR_DECL_HPP
 
-#include <FROSch_SchwarzPreconditioner_def.hpp>
+#include <FROSch_SchwarzOperator_def.hpp>
 
 
 namespace FROSch {
 
     using namespace std;
     using namespace Teuchos;
-    using namespace Xpetra;    
+    using namespace Xpetra;
 
-    //! A simple implementation of a SchwarzPreconditioner with one level.
+    //! Abstract(additive/multiplicative) combination of SchwarzOperators on different levels
     template <class SC = double,
               class LO = int,
               class GO = DefaultGlobalOrdinal,
               class NO = KokkosClassic::DefaultNode::DefaultNodeType>
-    class OneLevelPreconditioner : public SchwarzPreconditioner<SC,LO,GO,NO> {
+    class CombinedOperator : public SchwarzOperator<SC,LO,GO,NO> {
 
     protected:
 
-        using XMapPtr                           = typename SchwarzPreconditioner<SC,LO,GO,NO>::XMapPtr;
-        using ConstXMapPtr                      = typename SchwarzPreconditioner<SC,LO,GO,NO>::ConstXMapPtr;
+        using CommPtr                   = typename SchwarzOperator<SC,LO,GO,NO>::CommPtr;
 
-        using XMatrixPtr                        = typename SchwarzPreconditioner<SC,LO,GO,NO>::XMatrixPtr;
-        using ConstXMatrixPtr                   = typename SchwarzPreconditioner<SC,LO,GO,NO>::ConstXMatrixPtr;
+        using XMapPtr                   = typename SchwarzOperator<SC,LO,GO,NO>::XMapPtr;
+        using ConstXMapPtr              = typename SchwarzOperator<SC,LO,GO,NO>::ConstXMapPtr;
 
-        using XMultiVector                      = typename SchwarzPreconditioner<SC,LO,GO,NO>::XMultiVector;
-        using XMultiVectorPtr                      = typename SchwarzPreconditioner<SC,LO,GO,NO>::XMultiVectorPtr;
+        using ConstXMatrixPtr           = typename SchwarzOperator<SC,LO,GO,NO>::ConstXMatrixPtr;
 
-        using ParameterListPtr                  = typename SchwarzPreconditioner<SC,LO,GO,NO>::ParameterListPtr;
+        using XMultiVector              = typename SchwarzOperator<SC,LO,GO,NO>::XMultiVector;
+        using XMultiVectorPtr           = typename SchwarzOperator<SC,LO,GO,NO>::XMultiVectorPtr;
 
-        using CombinedOperatorPtr               = typename SchwarzPreconditioner<SC,LO,GO,NO>::CombinedOperatorPtr;
-        using SumOperatorPtr                    = typename SchwarzPreconditioner<SC,LO,GO,NO>::SumOperatorPtr;
-        using MultiplicativeOperatorPtr         = typename SchwarzPreconditioner<SC,LO,GO,NO>::MultiplicativeOperatorPtr;
-        using OverlappingOperatorPtr            = typename SchwarzPreconditioner<SC,LO,GO,NO>::OverlappingOperatorPtr;
-        using AlgebraicOverlappingOperatorPtr   = typename SchwarzPreconditioner<SC,LO,GO,NO>::AlgebraicOverlappingOperatorPtr;
+        using SchwarzOperatorPtr        = typename SchwarzOperator<SC,LO,GO,NO>::SchwarzOperatorPtr;
+        using SchwarzOperatorPtrVec     = typename SchwarzOperator<SC,LO,GO,NO>::SchwarzOperatorPtrVec;
+        using SchwarzOperatorPtrVecPtr  = typename SchwarzOperator<SC,LO,GO,NO>::SchwarzOperatorPtrVecPtr;
+
+        using UN                        = typename SchwarzOperator<SC,LO,GO,NO>::UN;
+
+        using BoolVec                   = typename SchwarzOperator<SC,LO,GO,NO>::BoolVec;
 
     public:
+        using SchwarzOperator<SC,LO,GO,NO>::SchwarzOperator;
 
-        OneLevelPreconditioner(ConstXMatrixPtr k,
-                               ParameterListPtr parameterList);
+        CombinedOperator(CommPtr comm);
 
-        virtual int initialize(bool useDefaultParameters = true);
+        CombinedOperator(SchwarzOperatorPtrVecPtr operators);
 
-        virtual int initialize(int overlap = -1,
-                               bool buildRepeatedMap = false);
+        ~CombinedOperator();
 
-        virtual int initialize(int overlap,
-                               ConstXMapPtr repeatedMap);
+        virtual int initialize();
+
+        virtual int initialize(ConstXMapPtr repeatedMap);
 
         virtual int compute();
-
+        //! Apply the CombinedOperator by applying the individual SchwarzOperators and combining them
         virtual void apply(const XMultiVector &x,
                            XMultiVector &y,
+                           bool usePreconditionerOnly,
                            ETransp mode=NO_TRANS,
                            SC alpha=ScalarTraits<SC>::one(),
-                           SC beta=ScalarTraits<SC>::zero()) const;
+                           SC beta=ScalarTraits<SC>::zero()) const = 0;
 
         virtual ConstXMapPtr getDomainMap() const;
 
@@ -107,16 +109,32 @@ namespace FROSch {
 
         virtual string description() const;
 
-        virtual int resetMatrix(ConstXMatrixPtr &k);
+        int addOperator(SchwarzOperatorPtr op);
+
+        int addOperators(SchwarzOperatorPtrVecPtr operators);
+
+        int resetOperator(UN iD,
+                          SchwarzOperatorPtr op);
+
+        int enableOperator(UN iD,
+                           bool enable);
+
+        UN getNumOperators();
+
+        virtual void preApplyCoarse(XMultiVector &x,
+                            XMultiVector &y);
+
+        virtual void resetMatrix(ConstXMatrixPtr &k);
 
     protected:
+        //! Vector storing the operators for the different levels which are applied and combined
+        SchwarzOperatorPtrVec OperatorVector_ = SchwarzOperatorPtrVec(0);
 
-        ConstXMatrixPtr K_;
+        //! Temp Vectors for apply()
+        mutable XMultiVectorPtr XTmp_;
 
-        CombinedOperatorPtr CombinedOperator_;  //! Either multiplicative or additive combination of operator on different levels.
-                                                //! In this preconditioner only one level exists.
-        OverlappingOperatorPtr OverlappingOperator_;//! The overlapping schwarz operator on the first level.
-                                                    //! Is also contained in the combined operator.
+        //! Saves which operators are enabled and which are disabled
+        BoolVec EnableOperators_ = BoolVec(0);
     };
 
 }
