@@ -352,6 +352,9 @@ namespace FROSch {
                                                         ArrayRCP<RCP<const Map<LO,GO,NO> > > dofsMaps,
                                                         RCP<const MultiVector<SC,LO,GO,NO> > nodeList = null);
 
+    template <class SC, class LO, class GO, class NO>
+    RCP<MultiVector<SC,LO,GO,NO>> toXpetra(const Ptr<Thyra::MultiVectorBase<SC>> &X_inout);
+
 #ifdef HAVE_SHYLU_DDFROSCH_EPETRA
     template <class SC,class LO,class GO,class NO>
     struct ConvertToXpetra {
