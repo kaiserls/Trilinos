@@ -108,6 +108,10 @@ namespace FROSch {
             << " | " << setw(41) << this->ParameterList_->get("Combine Values in Overlap","Restricted")
             << " |"
             << "\n" << setw(FROSCH_OUTPUT_INDENT) << " "
+            << "| " << left << setw(41) << "HarmonicOnOverlap" << right
+            << " | " << setw(41) << this->ParameterList_->get("HarmonicOnOverlap",false)
+            << " |"
+            << "\n" << setw(FROSCH_OUTPUT_INDENT) << " "
             << "| " << left << setw(41) << "Solver type" << right
             << " | " << setw(41) << this->ParameterList_->sublist("Solver").get("SolverType","Amesos2")
             << " |"
