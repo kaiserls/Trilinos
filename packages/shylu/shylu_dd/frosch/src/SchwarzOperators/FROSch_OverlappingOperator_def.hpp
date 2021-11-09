@@ -65,6 +65,9 @@ namespace FROSch {
             Combine_ = Restricted;
         }
         HarmonicOnOverlap_ = this->ParameterList_->get("HarmonicOnOverlap",false);
+        if(HarmonicOnOverlap_){
+            FROSCH_ASSERT(Combine_ != Full, "Harmonic on overlap cannot be used with CombineMode==Full")
+        }
     }
 
     template <class SC,class LO,class GO,class NO>
@@ -73,38 +76,17 @@ namespace FROSch {
         SubdomainSolver_.reset();
     }
 
-    //! Y = alpha * A^mode * X + beta * Y
-    //TODO: Explain the different steps beforehand or in the code. Same could be achieved by creating
-    // more subfunctions and giving them good names.
+    //TODO: Make XMultivector XOverlap a reference because we want to write into it and not create a new object
     template <class SC,class LO,class GO,class NO>
-    void OverlappingOperator<SC,LO,GO,NO>::apply(const XMultiVector &x,
-                                                 XMultiVector &y,
-                                                 bool usePreconditionerOnly,
-                                                 ETransp mode,
-                                                 SC alpha,
-                                                 SC beta) const
+    void OverlappingOperator<SC,LO,GO,NO>::restrictFromInto(const XMultiVectorPtr XTmp, XMultiVectorPtr & XOverlap) const
     {
-        FROSCH_TIMER_START_LEVELID(applyTime,"OverlappingOperator::apply");
-        FROSCH_ASSERT(this->IsComputed_,"FROSch::OverlappingOperator: OverlappingOperator has to be computed before calling apply()");
-        if (XTmp_.is_null()) XTmp_ = MultiVectorFactory<SC,LO,GO,NO>::Build(x.getMap(),x.getNumVectors());
-        *XTmp_ = x;
+        FROSCH_TIMER_START_LEVELID(applyTime,"OverlappingOperator::restrict");
+        FROSCH_ASSERT(this->IsInitialized_,"FROSch::OverlappingOperator: OverlappingOperator has to be initialized before calling apply()");
 
-        // Apply K first if the framework is not only used as preconditioner: P = M^-1 K
-        // If mode != NO_TRANS it is applied at the end
-        if (!usePreconditionerOnly && mode == NO_TRANS) {
-            this->K_->apply(x,*XTmp_,mode,ScalarTraits<SC>::one(),ScalarTraits<SC>::zero());
-        }
-        // AH 11/28/2018: For Epetra, XOverlap_ will only have a view to the values of XOverlapTmp_. Therefore, xOverlapTmp should not be deleted before XOverlap_ is used.
-        if (YOverlap_.is_null()) {
-            YOverlap_ = MultiVectorFactory<SC,LO,GO,NO>::Build(OverlappingMatrix_->getDomainMap(),x.getNumVectors());
-        } else {
-            YOverlap_->replaceMap(OverlappingMatrix_->getDomainMap());
-        }
-        // AH 11/28/2018: replaceMap does not update the GlobalNumRows. Therefore, we have to create a new MultiVector on the serial Communicator. In Epetra, we can prevent to copy the MultiVector.
-        if (XTmp_->getMap()->lib() == UseEpetra) {
+        if (XTmp->getMap()->lib() == UseEpetra) {
 #ifdef HAVE_XPETRA_EPETRA
-            if (XOverlapTmp_.is_null()) XOverlapTmp_ = MultiVectorFactory<SC,LO,GO,NO>::Build(OverlappingMap_,x.getNumVectors());
-            XOverlapTmp_->doImport(*XTmp_,*Scatter_,INSERT);
+            if (XOverlapTmp_.is_null()) XOverlapTmp_ = MultiVectorFactory<SC,LO,GO,NO>::Build(OverlappingMap_,XTmp->getNumVectors());
+            XOverlapTmp_->doImport(*XTmp,*Scatter_,INSERT);
             const RCP<const EpetraMultiVectorT<GO,NO> > xEpetraMultiVectorXOverlapTmp = rcp_dynamic_cast<const EpetraMultiVectorT<GO,NO> >(XOverlapTmp_);
             RCP<Epetra_MultiVector> epetraMultiVectorXOverlapTmp = xEpetraMultiVectorXOverlapTmp->getEpetra_MultiVector();
             const RCP<const EpetraMapT<GO,NO> >& xEpetraMap = rcp_dynamic_cast<const EpetraMapT<GO,NO> >(OverlappingMatrix_->getRangeMap());
@@ -112,29 +94,36 @@ namespace FROSch {
             double *A;
             int MyLDA;
             epetraMultiVectorXOverlapTmp->ExtractView(&A,&MyLDA);
-            RCP<Epetra_MultiVector> epetraMultiVectorXOverlap(new Epetra_MultiVector(::View,epetraMap,A,MyLDA,x.getNumVectors()));
-            XOverlap_ = RCP<EpetraMultiVectorT<GO,NO> >(new EpetraMultiVectorT<GO,NO>(epetraMultiVectorXOverlap));
+            RCP<Epetra_MultiVector> epetraMultiVectorXOverlap(new Epetra_MultiVector(::View,epetraMap,A,MyLDA,XTmp->getNumVectors()));
+            XOverlap = RCP<EpetraMultiVectorT<GO,NO> >(new EpetraMultiVectorT<GO,NO>(epetraMultiVectorXOverlap));
 #else
             FROSCH_ASSERT(false,"HAVE_XPETRA_EPETRA not defined.");
 #endif
         } else {
-            if (XOverlap_.is_null()) {
-                XOverlap_ = MultiVectorFactory<SC,LO,GO,NO>::Build(OverlappingMap_,x.getNumVectors());
+            // Do Import into overlapping local vector
+            if (XOverlap.is_null()) {
+                XOverlap = MultiVectorFactory<SC,LO,GO,NO>::Build(OverlappingMap_,XTmp->getNumVectors());
             } else {
-                XOverlap_->replaceMap(OverlappingMap_);
+                XOverlap->replaceMap(OverlappingMap_);
             }
-            XOverlap_->doImport(*XTmp_,*Scatter_,INSERT);
-            XOverlap_->replaceMap(OverlappingMatrix_->getRangeMap());
+            XOverlap->doImport(*XTmp,*Scatter_,INSERT);
+            XOverlap->replaceMap(OverlappingMatrix_->getRangeMap());
         }
-        SubdomainSolver_->apply(*XOverlap_,*YOverlap_,mode,ScalarTraits<SC>::one(),ScalarTraits<SC>::zero());
-        YOverlap_->replaceMap(OverlappingMap_);
+    }
 
-        XTmp_->putScalar(ScalarTraits<SC>::zero());
-        ConstXMapPtr yMap = y.getMap();
-        ConstXMapPtr yOverlapMap = YOverlap_->getMap();
+    //TODO: Make XMultivector ??? a reference because we want to write into it and not create a new object
+    template <class SC,class LO,class GO,class NO>
+    void OverlappingOperator<SC,LO,GO,NO>::prolongateFromInto(const XMultiVectorPtr YOverlap, XMultiVectorPtr XTmp, const XMultiVector & y) const
+    {
+        FROSCH_TIMER_START_LEVELID(applyTime,"OverlappingOperator::prolongate");
+        FROSCH_ASSERT(this->IsInitialized_,"FROSch::OverlappingOperator: OverlappingOperator has to be initialized before calling prolongate()");
+        XTmp->putScalar(ScalarTraits<SC>::zero());
+        
         if (Combine_ == Restricted) {
+            ConstXMapPtr yOverlapMap = YOverlap->getMap();
+            ConstXMapPtr yMap = y.getMap();
 #if defined(HAVE_XPETRA_KOKKOS_REFACTOR) && defined(HAVE_XPETRA_TPETRA)
-            if (XTmp_->getMap()->lib() == UseTpetra) {
+            if (XTmp->getMap()->lib() == UseTpetra) {
                 auto yLocalMap = yMap->getLocalMap();
                 auto yLocalOverlapMap = yOverlapMap->getLocalMap();
                 // run local restriction on execution space defined by local-map
@@ -142,8 +131,8 @@ namespace FROSch {
                 using execution_space = typename XMap::local_map_type::execution_space;
                 Kokkos::RangePolicy<execution_space> policy (0, yMap->getNodeNumElements());
                 for (UN i=0; i<y.getNumVectors(); i++) {
-                    auto yOverlapData_i = YOverlap_->getData(i);
-                    auto xLocalData_i = XTmp_->getDataNonConst(i);
+                    auto yOverlapData_i = YOverlap->getData(i);
+                    auto xLocalData_i = XTmp->getDataNonConst(i);
                     Kokkos::parallel_for(
                       "FROSch_OverlappingOperator::applyLocalRestriction", policy,
                       KOKKOS_LAMBDA(const int j) {
@@ -159,28 +148,68 @@ namespace FROSch {
                 GO globID = 0;
                 LO localID = 0;
                 for (UN i=0; i<y.getNumVectors(); i++) {
-                    ConstSCVecPtr yOverlapData_i = YOverlap_->getData(i);
+                    ConstSCVecPtr yOverlapData_i = YOverlap->getData(i);
                     for (UN j=0; j<yMap->getNodeNumElements(); j++) {
                         globID = yMap->getGlobalElement(j);
                         localID = yOverlapMap->getLocalElement(globID);
-                        XTmp_->getDataNonConst(i)[j] = yOverlapData_i[localID];
+                        XTmp->getDataNonConst(i)[j] = yOverlapData_i[localID];
                     }
                 }
             }
         } else { // All modes, excluding restricted
-            XTmp_->doExport(*YOverlap_,*Scatter_,ADD);
+            XTmp->doExport(*YOverlap,*Scatter_,ADD);
         }
         
         // Divide the result by the number of subdomains which contributed to this value
         if (Combine_ == Averaging) {
             ConstSCVecPtr scaling = Multiplicity_->getData(0);
-            for (UN j=0; j<XTmp_->getNumVectors(); j++) {
-                SCVecPtr values = XTmp_->getDataNonConst(j);
+            for (UN j=0; j<XTmp->getNumVectors(); j++) {
+                SCVecPtr values = XTmp->getDataNonConst(j);
                 for (UN i=0; i<values.size(); i++) {
                     values[i] = values[i] / scaling[i];
                 }
             }
         }
+    }
+
+    //! Y = alpha * A^mode * X + beta * Y
+    //TODO: Explain the different steps beforehand or in the code. Same could be achieved by creating
+    // more subfunctions and giving them good names.
+    template <class SC,class LO,class GO,class NO>
+    void OverlappingOperator<SC,LO,GO,NO>::apply(const XMultiVector &x,
+                                                 XMultiVector &y,
+                                                 bool usePreconditionerOnly,
+                                                 ETransp mode,
+                                                 SC alpha,
+                                                 SC beta) const
+    {
+        FROSCH_TIMER_START_LEVELID(applyTime,"OverlappingOperator::apply");
+        FROSCH_ASSERT(this->IsComputed_,"FROSch::OverlappingOperator: OverlappingOperator has to be computed before calling apply()");
+
+        if (XTmp_.is_null()) XTmp_ = MultiVectorFactory<SC,LO,GO,NO>::Build(x.getMap(),x.getNumVectors());
+        *XTmp_ = x;
+
+        // Apply K first if the framework is not only used as preconditioner: P = M^-1 K
+        // If mode != NO_TRANS it is applied at the end
+        if (!usePreconditionerOnly && mode == NO_TRANS) {
+            this->K_->apply(x,*XTmp_,mode,ScalarTraits<SC>::one(),ScalarTraits<SC>::zero());
+        }
+        
+        restrictFromInto(XTmp_, XOverlap_);
+
+        // AH 11/28/2018: For Epetra, XOverlap_ will only have a view to the values of XOverlapTmp_. Therefore, xOverlapTmp should not be deleted before XOverlap_ is used.
+        if (YOverlap_.is_null()) {
+            YOverlap_ = MultiVectorFactory<SC,LO,GO,NO>::Build(OverlappingMatrix_->getDomainMap(),x.getNumVectors());
+        } else {
+            YOverlap_->replaceMap(OverlappingMatrix_->getDomainMap());
+        }
+        if(HarmonicOnOverlap_){
+            std::cout<<"APPLY"<<XOverlap_->getGlobalLength()<<" "<<W_->getGlobalLength()<<std::endl;
+        }
+        SubdomainSolver_->apply(*XOverlap_,*YOverlap_,mode,ScalarTraits<SC>::one(),ScalarTraits<SC>::zero());
+        YOverlap_->replaceMap(OverlappingMap_);
+
+        prolongateFromInto(YOverlap_, XTmp_,y);//TODO: Improve interface?
 
         if (!usePreconditionerOnly && mode != NO_TRANS) {
             this->K_->apply(*XTmp_,*XTmp_,mode,ScalarTraits<SC>::one(),ScalarTraits<SC>::zero());
@@ -239,11 +268,14 @@ namespace FROSch {
         // See "Restricted Additive Schwarz Preconditioners with Harmonic Overlap
         // for Symmetric Positive Definite Linear Systems", (3.5)
         if(HarmonicOnOverlap_){
-            //TODO: Restrict rhs restricted or full, solve loc problem and combine again.
             FROSCH_ASSERT(this->isComputed(),"Compute preconditioner before starting preSolve routine");
-            W_ = MultiVectorFactory<SC,LO,GO,NO>::Build(OverlappingMap_,1);
-            SubdomainSolver_->apply(rhs,*W_, NO_TRANS,ScalarTraits<SC>::one(),ScalarTraits<SC>::zero());
-            auto Aw = MultiVectorFactory<SC,LO,GO,NO>::Build(OverlappingMap_,1);
+            W_ = MultiVectorFactory<SC,LO,GO,NO>::Build(OverlappingMatrix_->getDomainMap(),1);
+            RCP<XMultiVector> rhsRCP = RCP<XMultiVector>(&rhs, false);
+            restrictFromInto(rhsRCP, XOverlap_);
+                    std::cout<<"PRESOLVE"<<XOverlap_->getGlobalLength()<<" "<<W_->getGlobalLength()<<std::endl;
+
+            SubdomainSolver_->apply(*XOverlap_,*W_, NO_TRANS,ScalarTraits<SC>::one(),ScalarTraits<SC>::zero());
+            auto Aw = MultiVectorFactory<SC,LO,GO,NO>::Build(rhs.getMap(),1);
             this->K_->apply(*W_, *Aw);
             rhs.update(-1,*Aw,1);//rhs-A*w
         } else {
@@ -261,7 +293,12 @@ namespace FROSch {
         if(HarmonicOnOverlap_){
             FROSCH_ASSERT(this->isComputed(),"Compute preconditioner before starting afterSolve routine");
             FROSCH_ASSERT(W_ != null,"Did not compute solve");
-            lhs.update(1.,*W_, 1.);//lhs+W_
+            std::cout<<"AFTERSOLVE"<<lhs.getGlobalLength()<<" "<<W_->getGlobalLength()<<std::endl;
+            std::cout<<"AFTERSOLVE"<<lhs.getLocalLength()<<" "<<W_->getLocalLength()<<" " <<std::endl;
+            YOverlap_ = MultiVectorFactory<SC,LO,GO,NO>::Build(lhs.getMap(),lhs.getNumVectors());
+            prolongateFromInto(W_, YOverlap_, lhs);
+            std::cout<<"prolongated"<<std::endl;
+            lhs.update(1.,*YOverlap_, 1.);//lhs+W_
         }
     }
 }
