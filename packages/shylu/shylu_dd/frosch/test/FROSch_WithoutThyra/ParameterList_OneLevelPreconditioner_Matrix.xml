@@ -1,13 +1,19 @@
-<ParameterList name="FROSch">
-    <Parameter name="FROSch Preconditioner Type"                        type="string"   value="OneLevelPreconditioner"/>
-    <Parameter name="OverlappingOperator Type"                          type="string"   value="AlgebraicOverlappingOperator"/>
-    <ParameterList name="AlgebraicOverlappingOperator">
-        <Parameter name="Combine Values in Overlap"                     type="string" value="Full"/><!--Restricted,Averaging,Full-->
-        <Parameter name="HarmonicOnOverlap"                             type="bool"   value="1"/>
-        <Parameter name="Adding Layers Strategy"                        type="string"   value="CrsMatrix"/>
-        <ParameterList name="Solver">
-            <Parameter name="SolverType"                                type="string"   value="Amesos2"/>
-            <Parameter name="Solver"                                    type="string"   value="Klu"/>
-        </ParameterList>
-    </ParameterList>            
+<ParameterList name="WithoutThyra">
+    <ParameterList name="Solver">
+        <Parameter name="nIt" type="int" value="5"/>
+        <Parameter name="w" type="double" value="0.9"/>
+    </ParameterList>
+    <ParameterList name="FROSch">
+        <Parameter name="FROSch Preconditioner Type"                        type="string"   value="OneLevelPreconditioner"/>
+        <Parameter name="OverlappingOperator Type"                          type="string"   value="AlgebraicOverlappingOperator"/>
+        <ParameterList name="AlgebraicOverlappingOperator">
+            <Parameter name="Combine Values in Overlap"                     type="string" value="Restricted"/><!--Restricted,Averaging,Full-->
+            <Parameter name="HarmonicOnOverlap"                             type="bool"   value="1"/>
+            <Parameter name="Adding Layers Strategy"                        type="string"   value="CrsMatrix"/>
+            <ParameterList name="Solver">
+                <Parameter name="SolverType"                                type="string"   value="Amesos2"/>
+                <Parameter name="Solver"                                    type="string"   value="Klu"/>
+            </ParameterList>
+        </ParameterList>            
+    </ParameterList>    
 </ParameterList>

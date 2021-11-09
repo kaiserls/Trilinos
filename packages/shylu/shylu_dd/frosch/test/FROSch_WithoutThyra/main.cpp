@@ -55,26 +55,7 @@
 #include "Galeri_XpetraUtils.hpp"
 #include "Galeri_XpetraMaps.hpp"
 
-// Thyra includes
-#include <Thyra_LinearOpWithSolveBase.hpp>
-#include <Thyra_VectorBase.hpp>
-#include <Thyra_SolveSupportTypes.hpp>
-#include <Thyra_LinearOpWithSolveBase.hpp>
-#include <Thyra_LinearOpWithSolveFactoryHelpers.hpp>
-#include <Thyra_TpetraLinearOp.hpp>
-#include <Thyra_TpetraMultiVector.hpp>
-#include <Thyra_TpetraVector.hpp>
-#include <Thyra_TpetraThyraWrappers.hpp>
-#include <Thyra_VectorBase.hpp>
-#include <Thyra_VectorStdOps.hpp>
-#ifdef HAVE_SHYLU_DDFROSCH_EPETRA
-#include <Thyra_EpetraLinearOp.hpp>
-#endif
-#include <Thyra_VectorSpaceBase_def.hpp>
-#include <Thyra_VectorSpaceBase_decl.hpp>
 
-// Stratimikos includes
-#include <Stratimikos_FROSch_def.hpp>
 
 #include <Tpetra_Core.hpp>
 
@@ -86,10 +67,8 @@
 #endif
 #include <Xpetra_Parameters.hpp>
 
-// FROSCH thyra includes
-#include "Thyra_FROSchLinearOp_def.hpp"
-#include "Thyra_FROSchFactory_def.hpp"
 #include <FROSch_Tools_def.hpp>
+#include <FROSch_OneLevelPreconditioner_def.hpp>
 
 
 using UN    = unsigned;
@@ -102,7 +81,6 @@ using namespace std;
 using namespace Teuchos;
 using namespace Xpetra;
 using namespace FROSch;
-using namespace Thyra;
 
 int main(int argc, char *argv[])
 {
@@ -308,15 +286,14 @@ int main(int argc, char *argv[])
         xSolution->putScalar(ScalarTraits<SC>::zero());
         xRightHandSide->putScalar(ScalarTraits<SC>::one());
 
-        CrsMatrixWrap<SC,LO,GO,NO>& crsWrapK = dynamic_cast<CrsMatrixWrap<SC,LO,GO,NO>&>(*KMonolithic);
+        // CrsMatrixWrap<SC,LO,GO,NO>& crsWrapK = dynamic_cast<CrsMatrixWrap<SC,LO,GO,NO>&>(*KMonolithic);
 
         //-----------Set Coordinates and RepMap in ParameterList--------------------------
-        RCP<ParameterList> plList =  sublist(parameterList,"Preconditioner Types");
-        sublist(plList,"FROSch")->set("Dimension",Dimension);
-        sublist(plList,"FROSch")->set("Overlap",Overlap);
-        sublist(plList,"FROSch")->set("HarmonicOnOverlap",true);
+        sublist(parameterList,"FROSch")->set("Dimension",Dimension);
+        sublist(parameterList,"FROSch")->set("Overlap",Overlap);
+        sublist(parameterList,"FROSch")->set("HarmonicOnOverlap",true);
         if (NumberOfBlocks>1) {
-            sublist(plList,"FROSch")->set("Repeated Map Vector",RepeatedMaps);
+            sublist(parameterList,"FROSch")->set("Repeated Map Vector",RepeatedMaps);
 
             ArrayRCP<DofOrdering> dofOrderings(NumberOfBlocks);
             if (DOFOrdering == 0) {
@@ -331,11 +308,11 @@ int main(int argc, char *argv[])
                 assert(false);
             }
 
-            sublist(plList,"FROSch")->set("DofOrdering Vector",dofOrderings);
-            sublist(plList,"FROSch")->set("DofsPerNode Vector",dofsPerNodeVector);
+            sublist(parameterList,"FROSch")->set("DofOrdering Vector",dofOrderings);
+            sublist(parameterList,"FROSch")->set("DofsPerNode Vector",dofsPerNodeVector);
         } else if (NumberOfBlocks==1) {
-            sublist(plList,"FROSch")->set("Repeated Map",RepeatedMaps[0]);
-            // sublist(plList,"FROSch")->set("Coordinates List",Coordinates[0]); // Does not work yet...
+            sublist(parameterList,"FROSch")->set("Repeated Map",RepeatedMaps[0]);
+            // sublist(parameterList,"FROSch")->set("Coordinates List",Coordinates[0]); // Does not work yet...
 
             string DofOrderingString;
             if (DOFOrdering == 0) {
@@ -345,42 +322,46 @@ int main(int argc, char *argv[])
             } else {
                 assert(false);
             }
-            sublist(plList,"FROSch")->set("DofOrdering",DofOrderingString);
-            sublist(plList,"FROSch")->set("DofsPerNode",DofsPerNode);
+            sublist(parameterList,"FROSch")->set("DofOrdering",DofOrderingString);
+            sublist(parameterList,"FROSch")->set("DofsPerNode",DofsPerNode);
         } else {
             assert(false);
         }
+        RCP<ParameterList> preconditionerList =  sublist(parameterList,"FROSch");
+        RCP<ParameterList> solverList =  sublist(parameterList,"Solver");
 
-        Comm->barrier();
-        if (Comm->getRank()==0) {
-            cout << "##################\n# Parameter List #\n##################" << endl;
-            parameterList->print(cout);
-            cout << endl;
-        }
 
         Comm->barrier(); if (Comm->getRank()==0) cout << "###################################\n# Build preconditioner #\n###################################\n" << endl;
-        auto preconditioner = OneLevelPreconditioner<SC,LO,GO,NO>(crsWrapK.constPtr()), parameterList);//or KMonolithic?
+        auto preconditioner = OneLevelPreconditioner<SC,LO,GO,NO>(KMonolithic, preconditionerList);
+        preconditioner.initialize(false);
+        preconditioner.compute();
+        Comm->barrier(); if (Comm->getRank()==0) cout << "###################################\n# Prepare Solve #\n###################################\n" << endl;
         //pre solve
-        preconditioner.preSolve(xRightHandSide);
+        preconditioner.preSolve(*xRightHandSide);
         //solver
         RCP<MultiVector<SC,LO,GO,NO> > residual = MultiVectorFactory<SC,LO,GO,NO>::Build(xRightHandSide, DataAccess::Copy);
+        RCP<MultiVector<SC,LO,GO,NO> > y = MultiVectorFactory<SC,LO,GO,NO>::Build(xSolution, DataAccess::Copy);
         SC one = Teuchos::ScalarTraits<SC>::one();
-        int n_it = 100;
-        SC w = 0.1*one;
+        int n_it = solverList->get("nIt",100);
+        SC w = one*solverList->get("w",0.2);
         // infos
-        auto error = Teuchos::Array<double>();
+        auto error = Teuchos::Array<double>(1, -100);
         
-        //solve
+        Comm->barrier(); if (Comm->getRank()==0) cout << "###################################\n# Solve #\n###################################\n" << endl;
         for(int i=0; i<n_it; i++){
-            // update residual
-            preconditioner.residual(xSolution, xRightHandSide, residual);
+            // preconditioning
+            preconditioner.apply(*residual, *y);
             // update solution
-            //x_n+1 = x_n + w*residual = x_n + w(b-K*x_n)
-            xSolution.update(w, residual, one);
-            error = residual.normInf(error)
+            xSolution->update(w, *y, one);
+            // update residual
+            KMonolithic->apply(*y, *y);            //y_=Ay
+            residual->update(-w,*y,1.);
+            
+            residual->normInf(error);
+            if (Comm->getRank()==0) std::cout<<"The current error is: "<<error<<std::endl;
         }
-        std::cout<<"The final error is: "<<error<<std::endl;
-        preconditioner.afterSolve(xSolution);
+        if (Comm->getRank()==0) std::cout<<"The final error is: "<<error<<std::endl;
+        preconditioner.afterSolve(*xSolution);
         
         // RCP<const LinearOpBase<SC> > K_thyra = ThyraUtils<SC,LO,GO,NO>::toThyra(crsWrapK.getCrsMatrix());
         // RCP<MultiVectorBase<SC> >thyraX = rcp_const_cast<MultiVectorBase<SC> >(ThyraUtils<SC,LO,GO,NO>::toThyraMultiVector(xSolution));
@@ -409,6 +390,12 @@ int main(int argc, char *argv[])
 
 
         Comm->barrier(); if (Comm->getRank()==0) cout << "\n#############\n# Finished! #\n#############" << endl;
+        Comm->barrier();
+        if (Comm->getRank()==0) {
+            cout << "##################\n# Parameter List #\n##################" << endl;
+            parameterList->print(cout);
+            cout << endl;
+        }
 
         // assert(status.solveStatus==SOLVE_STATUS_CONVERGED);
     }
