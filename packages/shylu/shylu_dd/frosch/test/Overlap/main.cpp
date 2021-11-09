@@ -383,6 +383,8 @@ int main(int argc, char *argv[])
         solve<double>(*lows, Thyra::NOTRANS, *thyraB, thyraX.ptr());
 
         Comm->barrier(); if (Comm->getRank()==0) cout << "\n#############\n# Finished! #\n#############" << endl;
+
+        FROSCH_ASSERT(status.solveStatus==SOLVE_STATUS_CONVERGED);
     }
 
     CommWorld->barrier();
