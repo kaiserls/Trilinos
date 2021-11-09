@@ -64,6 +64,7 @@ namespace FROSch {
         } else if (!this->ParameterList_->get("Combine Values in Overlap","Restricted").compare("Restricted")) {
             Combine_ = Restricted;
         }
+        HarmonicOnOverlap_ = this->ParameterList_->get("HarmonicOnOverlap",false);
     }
 
     template <class SC,class LO,class GO,class NO>
@@ -192,7 +193,8 @@ namespace FROSch {
     {
         FROSCH_DETAILTIMER_START_LEVELID(initializeOverlappingOperatorTime,"OverlappingOperator::initializeOverlappingOperator");
         Scatter_ = ImportFactory<LO,GO,NO>::Build(this->getDomainMap(),OverlappingMap_);
-        if (Combine_ == Averaging) {
+        // Calculate multiplicity if needed
+        if (Combine_ == Averaging || HarmonicOnOverlap_) {
             Multiplicity_ = MultiVectorFactory<SC,LO,GO,NO>::Build(this->getRangeMap(),1);
             XMultiVectorPtr multiplicityRepeated;
             multiplicityRepeated = MultiVectorFactory<SC,LO,GO,NO>::Build(OverlappingMap_,1);
@@ -229,6 +231,38 @@ namespace FROSch {
         }
         this->IsComputed_ = true;
         return SubdomainSolver_->compute();
+    }
+
+    // Adapt the rhs of the system to make the initial residual compatible with the preconditioner
+    template <class SC,class LO,class GO,class NO>
+    void OverlappingOperator<SC,LO,GO,NO>::preSolve(XMultiVector & rhs){
+        // See "Restricted Additive Schwarz Preconditioners with Harmonic Overlap
+        // for Symmetric Positive Definite Linear Systems", (3.5)
+        if(HarmonicOnOverlap_){
+            //TODO: Restrict rhs restricted or full, solve loc problem and combine again.
+            FROSCH_ASSERT(this->isComputed(),"Compute preconditioner before starting preSolve routine");
+            W_ = MultiVectorFactory<SC,LO,GO,NO>::Build(OverlappingMap_,1);
+            SubdomainSolver_->apply(rhs,*W_, NO_TRANS,ScalarTraits<SC>::one(),ScalarTraits<SC>::zero());
+            auto Aw = MultiVectorFactory<SC,LO,GO,NO>::Build(OverlappingMap_,1);
+            this->K_->apply(*W_, *Aw);
+            rhs.update(-1,*Aw,1);//rhs-A*w
+        } else {
+            //Do nothing
+        }
+            // TODO: Do i have to calculate g? See formula 3.9 in restricted harmonic
+    }
+
+    // Adapt the solution of the system to obtain the correct solution,
+    // despite the change in the rhs in the preSolve function
+    template <class SC,class LO,class GO,class NO>
+    void OverlappingOperator<SC,LO,GO,NO>::afterSolve(XMultiVector & lhs){
+        // Transform the harmonic solution back to the solution of the nonharmonic system using
+        // w from Equation 3.5
+        if(HarmonicOnOverlap_){
+            FROSCH_ASSERT(this->isComputed(),"Compute preconditioner before starting afterSolve routine");
+            FROSCH_ASSERT(W_ != null,"Did not compute solve");
+            lhs.update(1.,*W_, 1.);//lhs+W_
+        }
     }
 }
 

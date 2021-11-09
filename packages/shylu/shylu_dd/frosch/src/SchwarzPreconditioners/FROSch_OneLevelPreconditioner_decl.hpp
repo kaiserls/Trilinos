@@ -92,6 +92,9 @@ namespace FROSch {
 
         virtual int compute();
 
+        virtual void preSolve(XMultiVector & rhs);
+        virtual void afterSolve(XMultiVector & lhs);
+
         virtual void apply(const XMultiVector &x,
                            XMultiVector &y,
                            ETransp mode=NO_TRANS,

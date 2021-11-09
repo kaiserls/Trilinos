@@ -131,6 +131,15 @@ namespace FROSch {
         XMultiVectorPtr Multiplicity_; //! Stores in how many domains each node is contained.
 
         CombinationType Combine_ = Averaging;
+public:
+        // TODO: Maybe create subclass for this
+        void preSolve(XMultiVector & rhs);//Teuchos::RCP<const OP> A,
+        void afterSolve(XMultiVector & lhs);
+protected:
+        XMultiVectorPtr W_;
+        bool HarmonicOnOverlap_ = false; //! Use harmonic decay of subdomain "solution" on overlap
+                                         //! Sarkis, Marcus. "Partition of unity coarse spaces and Schwarz methods with
+                                         //! harmonic overlap." Recent Developments in Domain Decomposition Methods. Springer, Berlin, Heidelberg, 2002. 77-94.
     };
 
 }

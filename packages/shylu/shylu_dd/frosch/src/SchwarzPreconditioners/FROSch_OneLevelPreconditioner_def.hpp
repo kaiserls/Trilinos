@@ -118,6 +118,16 @@ namespace FROSch {
         FROSCH_TIMER_START_LEVELID(computeTime,"OneLevelPreconditioner::compute");
         return OverlappingOperator_->compute();
     }
+    
+    template <class SC,class LO,class GO,class NO>
+    void OneLevelPreconditioner<SC,LO,GO,NO>::preSolve(XMultiVector & rhs){
+        OverlappingOperator_->preSolve(rhs);
+    }
+
+    template <class SC,class LO,class GO,class NO>
+    void OneLevelPreconditioner<SC,LO,GO,NO>::afterSolve(XMultiVector & lhs){
+        OverlappingOperator_->afterSolve(lhs);
+    }
 
     template <class SC,class LO,class GO,class NO>
     void OneLevelPreconditioner<SC,LO,GO,NO>::apply(const XMultiVector &x,
