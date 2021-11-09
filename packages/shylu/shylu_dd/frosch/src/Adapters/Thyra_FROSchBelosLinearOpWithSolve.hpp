@@ -39,47 +39,60 @@
 // ************************************************************************
 //@HEADER
 
-#ifndef _STRATIMIKOS_FROSCH_DEF_HPP
-#define _STRATIMIKOS_FROSCH_DEF_HPP
+#ifndef THYRA_FROSCHBELOS_LINEAR_OP_WITH_SOLVE_HPP
+#define THYRA_FROSCHBELOS_LINEAR_OP_WITH_SOLVE_HPP
 
-#include "Stratimikos_FROSch_decl.hpp"
+#include "Thyra_BelosLinearOpWithSolve_decl.hpp"
+#include "Thyra_BelosLinearOpWithSolve_def.hpp"
+#include "FROSch_OneLevelPreconditioner_decl.hpp"
 
-#include "Thyra_FROSchFactory_def.hpp"
+#include "FROSch_Tools_decl.hpp"
 
-//#include "Thyra_FROSchBelosLinearOpWithSolveFactory_decl.hpp"
-#include "Thyra_FROSchBelosLinearOpWithSolveFactory_def.hpp"
+namespace Thyra {
 
-namespace Stratimikos {
+template<class Scalar>
+class FROSchBelosLinearOpWithSolve : virtual public Thyra::BelosLinearOpWithSolve<Scalar>
+{
+public:
+    SolveStatus<Scalar> solveImpl(
+        const EOpTransp M_trans,
+        const MultiVectorBase<Scalar> &B,
+        const Ptr<MultiVectorBase<Scalar> > &X,
+        const Ptr<const SolveCriteria<Scalar> > solveCriteria
+    ) const;
 
-    using namespace std;
-    using namespace Teuchos;
-    using namespace Thyra;
+};//class froschbelos...
 
-    template <typename LO,typename GO,typename NO>
-    void enableFROSch (DefaultLinearSolverBuilder& builder,
-                       const string& stratName)
-    {
-        const RCP<const ParameterList> precValidParams = sublist(builder.getValidParameters(), "Preconditioner Types");
 
-        TEUCHOS_TEST_FOR_EXCEPTION(precValidParams->isParameter(stratName), logic_error,
-                                   "Stratimikos::enableFROSch cannot add \"" + stratName +"\" because it is already included in builder!");
+//auto & new_lhs = (*problem.getCurrLHSVec()).copy();
 
-        using Base = PreconditionerFactoryBase<double>;
-        if (!stratName.compare("FROSch")) {
-            using Impl = FROSchFactory<double, LO, GO, NO>;
-            builder.setPreconditioningStrategyFactory(abstractFactoryStd<Base, Impl>(), stratName);
-        }
+template<class Scalar>
+SolveStatus<Scalar>
+FROSchBelosLinearOpWithSolve<Scalar>::solveImpl(
+  const EOpTransp M_trans,
+  const MultiVectorBase<Scalar> &B,
+  const Ptr<MultiVectorBase<Scalar> > &X,
+  const Ptr<const SolveCriteria<Scalar> > solveCriteria
+  ) const {
+  std::cout<<"Solving with my custom solver"<<std::endl;
+  auto & problem = this->lp_.getProblem();
+  auto & prepareP = dynamic_cast<FROSch::OneLevelPreconditioner<SC,LO,GO,NO>>(this->lp_->getLeftPrec());//TODO: Hardcoded if left or right
+  
+  // prepare right hand side
+  RCP<MultiVector<SC,LO,GO,NO>> BXpetraView = FROSch::toXpetra<SC,LO,GO,NO>(&B);
+  RCP<MultiVector<SC,LO,GO,NO>> BNew = MultiVectorFactory<SC,LO,GO,NO>::Build(BXpetraView, DataAccess::Copy);
+  prepareP.preSolve(BNew);
+  
+  // solve 
+  SolveStatus<Scalar> belosSolveStatus = Thyra::BelosLinearOpWithSolve<Scalar>::solveImpl(M_trans, BNew, X, solveCriteria);
+  
+  // after solve
+  RCP<MultiVector<SC,LO,GO,NO> > XXpetraView =FROSch::toXpetra<SC,LO,GO,NO>(&X);
+  prepareP->afterSolve(XXpetraView);  
+  
+  return belosSolveStatus;
+  }
 
-        #ifdef HAVE_SHYLU_DDFROSCH_BELOS
-            std::cout<<"FROSchBelos"<<std::endl;
-            using BaseSolver = Thyra::LinearOpWithSolveFactoryBase<double>;
-            using ImplSolver = Thyra::FROSchBelosLinearOpWithSolveFactory<double>;//TODO: Create this class From BelosLinearOpWithSolveFactory and serch for methods with "BelosLinearOpWithSolve"
-            builder.setLinearSolveStrategyFactory(
-                abstractFactoryStd<BaseSolver,ImplSolver>(),//FroschBelos!
-                "FROSchBelos", true);
-        #endif
-    }
-
-} // namespace Stratimikos
+}//namespace thyra
 
 #endif

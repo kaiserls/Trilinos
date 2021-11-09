@@ -57,6 +57,9 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 APPEND_SET(HEADERS
   Adapters/Stratimikos_FROSch_decl.hpp
   Adapters/Stratimikos_FROSch_def.hpp
+  Adapters/Thyra_FROSchBelosLinearOpWithSolve.hpp
+  Adapters/Thyra_FROSchBelosLinearOpWithSolveFactory_decl.hpp
+  Adapters/Thyra_FROSchBelosLinearOpWithSolveFactory_def.hpp
   Adapters/Thyra_FROSchFactory_decl.hpp
   Adapters/Thyra_FROSchFactory_def.hpp
   Adapters/Thyra_FROSchLinearOp_decl.hpp

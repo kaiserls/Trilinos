@@ -39,47 +39,17 @@
 // ************************************************************************
 //@HEADER
 
-#ifndef _STRATIMIKOS_FROSCH_DEF_HPP
-#define _STRATIMIKOS_FROSCH_DEF_HPP
+#include "Thyra_FROSchBelosLinearOpWithSolveFactory_decl.hpp"
 
-#include "Stratimikos_FROSch_decl.hpp"
+#ifdef HAVE_THYRA_EXPLICIT_INSTANTIATION
 
-#include "Thyra_FROSchFactory_def.hpp"
-
-//#include "Thyra_FROSchBelosLinearOpWithSolveFactory_decl.hpp"
 #include "Thyra_FROSchBelosLinearOpWithSolveFactory_def.hpp"
+#include "Teuchos_ExplicitInstantiationHelpers.hpp"
 
-namespace Stratimikos {
+namespace Thyra {
 
-    using namespace std;
-    using namespace Teuchos;
-    using namespace Thyra;
+TEUCHOS_CLASS_TEMPLATE_INSTANT_REAL_SCALAR_TYPES(FROSchBelosLinearOpWithSolveFactory)
 
-    template <typename LO,typename GO,typename NO>
-    void enableFROSch (DefaultLinearSolverBuilder& builder,
-                       const string& stratName)
-    {
-        const RCP<const ParameterList> precValidParams = sublist(builder.getValidParameters(), "Preconditioner Types");
+} // namespace Thyra
 
-        TEUCHOS_TEST_FOR_EXCEPTION(precValidParams->isParameter(stratName), logic_error,
-                                   "Stratimikos::enableFROSch cannot add \"" + stratName +"\" because it is already included in builder!");
-
-        using Base = PreconditionerFactoryBase<double>;
-        if (!stratName.compare("FROSch")) {
-            using Impl = FROSchFactory<double, LO, GO, NO>;
-            builder.setPreconditioningStrategyFactory(abstractFactoryStd<Base, Impl>(), stratName);
-        }
-
-        #ifdef HAVE_SHYLU_DDFROSCH_BELOS
-            std::cout<<"FROSchBelos"<<std::endl;
-            using BaseSolver = Thyra::LinearOpWithSolveFactoryBase<double>;
-            using ImplSolver = Thyra::FROSchBelosLinearOpWithSolveFactory<double>;//TODO: Create this class From BelosLinearOpWithSolveFactory and serch for methods with "BelosLinearOpWithSolve"
-            builder.setLinearSolveStrategyFactory(
-                abstractFactoryStd<BaseSolver,ImplSolver>(),//FroschBelos!
-                "FROSchBelos", true);
-        #endif
-    }
-
-} // namespace Stratimikos
-
-#endif
+#endif // HAVE_THYRA_EXPLICIT_INSTANTIATION
