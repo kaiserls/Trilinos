@@ -104,10 +104,10 @@ namespace FROSch {
             if (XOverlap.is_null()) {
                 XOverlap = MultiVectorFactory<SC,LO,GO,NO>::Build(OverlappingMap_,XTmp->getNumVectors());
             } else {
-                XOverlap->replaceMap(OverlappingMap_);
+                XOverlap->replaceMap(OverlappingMap_);// to global communicator
             }
-            XOverlap->doImport(*XTmp,*Scatter_,INSERT);
-            XOverlap->replaceMap(OverlappingMatrix_->getRangeMap());
+            XOverlap->doImport(*XTmp,*Scatter_,INSERT);//unique XTmp to overlapping XOverlap
+            XOverlap->replaceMap(OverlappingMatrix_->getRangeMap());//global to local communicator, to prevent subdomain solvers communication
         }
     }
 
