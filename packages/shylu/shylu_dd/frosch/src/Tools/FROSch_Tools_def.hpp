@@ -1614,12 +1614,12 @@ namespace FROSch {
     }
 
     template <class SC, class LO, class GO, class NO>
-    RCP<MultiVector<SC,LO,GO,NO>> toXpetra(const Ptr<Thyra::MultiVectorBase<SC>> &X_inout){
+    const RCP<MultiVector<SC,LO,GO,NO>> toXpetra(const Ptr<Thyra::MultiVectorBase<SC>> &X_inout){
         const RCP<const Tpetra::MultiVector<SC,LO,GO,NO> > xTpMultVec = Thyra::TpetraOperatorVectorExtraction<SC,LO,GO,NO>::getConstTpetraMultiVector(rcpFromPtr(X_inout));
         TEUCHOS_TEST_FOR_EXCEPT(is_null(xTpMultVec));
         RCP<Tpetra::MultiVector<SC,LO,GO,NO> > tpNonConstMultVec = rcp_const_cast<Tpetra::MultiVector<SC,LO,GO,NO> >(xTpMultVec);
         TEUCHOS_TEST_FOR_EXCEPT(is_null(tpNonConstMultVec));
-        const RCP<const Xpetra::MultiVector<SC,LO,GO,NO> > xX = rcp(new Xpetra::TpetraMultiVector<SC,LO,GO,NO>(tpNonConstMultVec));
+        const RCP<Xpetra::MultiVector<SC,LO,GO,NO> > xX = rcp(new Xpetra::TpetraMultiVector<SC,LO,GO,NO>(tpNonConstMultVec));
         TEUCHOS_TEST_FOR_EXCEPT(is_null(xX));
         return xX;
     }     

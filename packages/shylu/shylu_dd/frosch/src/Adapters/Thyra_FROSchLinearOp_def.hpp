@@ -43,6 +43,8 @@
 #define _THYRA_FROSCH_LINEAR_OP_DEF_HPP
 
 #include "Thyra_FROSchLinearOp_decl.hpp"
+#include "FROSch_Tools_decl.hpp"
+#include "FROSch_SchwarzPreconditioner_decl.hpp"
 
 
 #ifdef HAVE_SHYLU_DDFROSCH_THYRA
@@ -79,6 +81,21 @@ namespace Thyra {
     {
         initializeImpl(rangeSpace, domainSpace, xpetraOperator,bIsEpetra,bIsTpetra);
     }
+
+    template <class SC, class LO, class GO, class NO>
+    void FROSchLinearOp<SC,LO,GO,NO>::preSolve(Ptr<MultiVectorBase<SC>> rhs){
+        auto xpetraRhs = toXpetra<SC,LO,GO,NO>(rhs);
+        auto prec = rcp_dynamic_cast<SchwarzPreconditioner<SC,LO,GO,NO>, Operator<SC,LO,GO,NO>>(getXpetraOperator());
+        prec->preSolve(*xpetraRhs);
+    }
+
+    template <class SC, class LO, class GO, class NO>
+    void FROSchLinearOp<SC,LO,GO,NO>::afterSolve(Ptr<MultiVectorBase<SC>> lhs){
+        auto xpetraLhs = toXpetra<SC,LO,GO,NO>(lhs);
+        auto prec = rcp_dynamic_cast<SchwarzPreconditioner<SC,LO,GO,NO>, Operator<SC,LO,GO,NO>>(getXpetraOperator());
+        prec->preSolve(*xpetraLhs);
+    }
+
 
     template <class SC, class LO, class GO, class NO>
     RCP<Operator<SC,LO,GO,NO> > FROSchLinearOp<SC,LO,GO,NO>::getXpetraOperator()

@@ -121,6 +121,9 @@ namespace FROSch {
 
         virtual int compute() = 0;
 
+        virtual void preSolve(XMultiVector & rhs);
+        virtual void afterSolve(XMultiVector & lhs);
+
         // Y = alpha * A^mode * X + beta * Y
         virtual void apply(const XMultiVector &X,
                            XMultiVector &Y,

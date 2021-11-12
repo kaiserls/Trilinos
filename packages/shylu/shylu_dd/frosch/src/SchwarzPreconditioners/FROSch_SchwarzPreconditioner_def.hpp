@@ -87,6 +87,16 @@ namespace FROSch {
     }
 
     template <class SC,class LO,class GO,class NO>
+    void SchwarzPreconditioner<SC,LO,GO,NO>::preSolve(XMultiVector & rhs){
+        
+    }
+
+    template <class SC,class LO,class GO,class NO>
+    void SchwarzPreconditioner<SC,LO,GO,NO>::afterSolve(XMultiVector & lhs){
+
+    }
+
+    template <class SC,class LO,class GO,class NO>
     void SchwarzPreconditioner<SC,LO,GO,NO>::residual(const XMultiVector & X,
                                                       const XMultiVector & B,
                                                       XMultiVector& R) const

@@ -353,7 +353,7 @@ namespace FROSch {
                                                         RCP<const MultiVector<SC,LO,GO,NO> > nodeList = null);
 
     template <class SC, class LO, class GO, class NO>
-    RCP<MultiVector<SC,LO,GO,NO>> toXpetra(const Ptr<Thyra::MultiVectorBase<SC>> &X_inout);
+    const RCP<MultiVector<SC,LO,GO,NO>> toXpetra(const Ptr<Thyra::MultiVectorBase<SC>> &X_in);
 
 #ifdef HAVE_SHYLU_DDFROSCH_EPETRA
     template <class SC,class LO,class GO,class NO>
