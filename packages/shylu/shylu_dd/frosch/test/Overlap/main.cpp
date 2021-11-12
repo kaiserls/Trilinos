@@ -311,7 +311,7 @@ int main(int argc, char *argv[])
         CrsMatrixWrap<SC,LO,GO,NO>& crsWrapK = dynamic_cast<CrsMatrixWrap<SC,LO,GO,NO>&>(*KMonolithic);
         RCP<const LinearOpBase<SC> > K_thyra = ThyraUtils<SC,LO,GO,NO>::toThyra(crsWrapK.getCrsMatrix());
         RCP<MultiVectorBase<SC> >thyraX = rcp_const_cast<MultiVectorBase<SC> >(ThyraUtils<SC,LO,GO,NO>::toThyraMultiVector(xSolution));
-        RCP<const MultiVectorBase<SC> >thyraB = ThyraUtils<SC,LO,GO,NO>::toThyraMultiVector(xRightHandSide);
+        RCP<MultiVectorBase<SC> >thyraB = rcp_const_cast<MultiVectorBase<SC> >(ThyraUtils<SC,LO,GO,NO>::toThyraMultiVector(xRightHandSide));
 
         //-----------Set Coordinates and RepMap in ParameterList--------------------------
         RCP<ParameterList> plList =  sublist(parameterList,"Preconditioner Types");
@@ -367,24 +367,41 @@ int main(int argc, char *argv[])
 
         Comm->barrier(); if (Comm->getRank()==0) cout << "######################\n# Thyra PrepForSolve #\n######################\n" << endl;
 
-        RCP<LinearOpWithSolveFactoryBase<SC> > lowsFactory =
-        linearSolverBuilder.createLinearSolveStrategy("");
+        RCP<LinearOpWithSolveFactoryBase<SC> > solverFactory =
+        Thyra::createLinearSolveStrategy(linearSolverBuilder);
 
-        lowsFactory->setOStream(out);
-        lowsFactory->setVerbLevel(VERB_HIGH);
+        solverFactory->setOStream(out);
+        solverFactory->setVerbLevel(VERB_HIGH);
 
         Comm->barrier(); if (Comm->getRank()==0) cout << "###########################\n# Thyra LinearOpWithSolve #\n###########################" << endl;
 
-        RCP<LinearOpWithSolveBase<SC> > lows =
-        linearOpWithSolve(*lowsFactory, K_thyra);
+        // preconditioner
+        auto precFactory = solverFactory->getPreconditionerFactory();
+        RCP<Thyra::PreconditionerBase<SC> > prec = precFactory->createPrec();
+        Thyra::initializePrec<double>(*precFactory, K_thyra, prec.ptr());
+        // solver
+        Teuchos::RCP<Thyra::LinearOpWithSolveBase<SC> > solveOp = solverFactory->createOp(); 
+        Thyra::initializePreconditionedOp<double>(*solverFactory, K_thyra, prec, solveOp.ptr());    
 
+        Comm->barrier(); if (Comm->getRank()==0) cout << "###########################\n# Casting #\n###########################" << endl;
+        
+        //op to FROSch Operator
+        auto nonConstOp = rcp_const_cast<LinearOpBase<SC>>(prec->getUnspecifiedPrecOp());
+        auto froschLinearOp = rcp_dynamic_cast<Thyra::FROSchLinearOp<SC, LO, GO, NO>,LinearOpBase<SC>>(nonConstOp, true);
+        
+        Comm->barrier(); if (Comm->getRank()==0) cout << "###########################\n# PreSolve #\n###########################" << endl;
+        // Preconditioner is called from FROSch Operator
+        froschLinearOp->preSolve(thyraB.ptr());
+        
         Comm->barrier(); if (Comm->getRank()==0) cout << "\n#########\n# Solve #\n#########" << endl;
         SolveStatus<double> status =
-        solve<double>(*lows, Thyra::NOTRANS, *thyraB, thyraX.ptr());
-
+        solve<double>(*solveOp, Thyra::NOTRANS, *thyraB, thyraX.ptr());
         Comm->barrier(); if (Comm->getRank()==0) cout << "\n#############\n# Finished! #\n#############" << endl;
 
-        FROSCH_ASSERT(status.solveStatus==SOLVE_STATUS_CONVERGED);
+        Comm->barrier(); if (Comm->getRank()==0) cout << "###########################\n# AfterSolve #\n###########################" << endl;
+        froschLinearOp->afterSolve(thyraX.ptr());
+        
+        FROSCH_ASSERT(status.solveStatus==SOLVE_STATUS_CONVERGED, "Solver didn't converge");
     }
 
     CommWorld->barrier();
