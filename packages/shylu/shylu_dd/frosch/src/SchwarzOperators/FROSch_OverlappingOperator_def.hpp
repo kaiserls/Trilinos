@@ -76,7 +76,6 @@ namespace FROSch {
         SubdomainSolver_.reset();
     }
 
-    //TODO: Make XMultivector XOverlap a reference because we want to write into it and not create a new object
     template <class SC,class LO,class GO,class NO>
     void OverlappingOperator<SC,LO,GO,NO>::restrictFromInto(const XMultiVectorPtr XTmp, XMultiVectorPtr & XOverlap) const
     {
@@ -111,7 +110,6 @@ namespace FROSch {
         }
     }
 
-    //TODO: Make XMultivector ??? a reference because we want to write into it and not create a new object
     template <class SC,class LO,class GO,class NO>
     void OverlappingOperator<SC,LO,GO,NO>::prolongateFromInto(const XMultiVectorPtr YOverlap, XMultiVectorPtr XTmp, const XMultiVector & y) const
     {
@@ -209,7 +207,7 @@ namespace FROSch {
         SubdomainSolver_->apply(*XOverlap_,*YOverlap_,mode,ScalarTraits<SC>::one(),ScalarTraits<SC>::zero());
         YOverlap_->replaceMap(OverlappingMap_);
 
-        prolongateFromInto(YOverlap_, XTmp_,y);//TODO: Improve interface?
+        prolongateFromInto(YOverlap_, XTmp_,y);//y is there to provide a unique map for the restricted import
 
         if (!usePreconditionerOnly && mode != NO_TRANS) {
             this->K_->apply(*XTmp_,*XTmp_,mode,ScalarTraits<SC>::one(),ScalarTraits<SC>::zero());
