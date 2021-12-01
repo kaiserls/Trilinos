@@ -93,7 +93,7 @@ namespace Thyra {
     void FROSchLinearOp<SC,LO,GO,NO>::afterSolve(Ptr<MultiVectorBase<SC>> lhs){
         auto xpetraLhs = toXpetra<SC,LO,GO,NO>(lhs);
         auto prec = rcp_dynamic_cast<SchwarzPreconditioner<SC,LO,GO,NO>, Operator<SC,LO,GO,NO>>(getXpetraOperator());
-        prec->preSolve(*xpetraLhs);
+        prec->afterSolve(*xpetraLhs);
     }
 
 
