@@ -219,3 +219,12 @@ ARGS "--M=5 --DIM=3 --O=2 --DPN=3 --PLIST=ParameterLists/ParameterList_OneLevelP
 COMM mpi
 NUM_MPI_PROCS 8
 )
+
+## Harmonic
+TRIBITS_ADD_TEST(
+overlap
+NAME test_overlap_Matrix_DIM2_DPN1_TPETRA_HARMONIC
+ARGS "--M=5 --DIM=2 --O=2 --DPN=1 --PLIST=ParameterLists/ParameterList_OneLevelPreconditioner_Harmonic.xml --USETPETRA"
+COMM mpi
+NUM_MPI_PROCS 4
+)
