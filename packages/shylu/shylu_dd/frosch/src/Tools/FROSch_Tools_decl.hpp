@@ -57,6 +57,9 @@
 #include <Xpetra_VectorFactory.hpp>
 #include <Xpetra_ExportFactory.hpp>
 
+#include <Thyra_MultiVectorBase_decl.hpp>
+#include <Thyra_TpetraThyraWrappers.hpp>
+
 #ifdef HAVE_SHYLU_DDFROSCH_ZOLTAN2
 #include <Zoltan2_MatrixAdapter.hpp>
 #include <Zoltan2_XpetraCrsMatrixAdapter.hpp>
@@ -261,6 +264,11 @@ namespace FROSch {
                                 RCP<const Map<LO,GO,NO> > inputMap,
                                 RCP<const CrsGraph<LO,GO,NO> > &outputGraph,
                                 RCP<const Map<LO,GO,NO> > &outputMap);
+
+    template <class LO,class GO,class NO>
+    RCP<Map<LO,GO,NO>> getOuterInterfaceNodes(RCP<const CrsGraph<LO,GO,NO> > graph);
+    template <class LO,class GO,class NO>
+    Teuchos::RCP<Xpetra::Vector<int, LO,GO,NO>> getOuterInterfaceNodesAsVectorBinaryEncoded(RCP<const CrsGraph<LO,GO,NO> > graph);
 
     /*! \brief Sort the Xpetra::Map by the global IDs \c x
      * \param[in] inputMap Unsorted input map

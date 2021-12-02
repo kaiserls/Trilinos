@@ -964,8 +964,59 @@ namespace FROSch {
         outputGraph = tmpGraph.getConst();
         outputMap = outputGraph->getColMap();
 
+        RCP<FancyOStream> wrappedCout = getFancyOStream (rcpFromRef (std::cout));
+        // inputGraph->getRowMap()->describe(*wrappedCout, Teuchos::VERB_EXTREME);
+        // inputMap->describe(*wrappedCout, Teuchos::VERB_EXTREME);
         return 0;
     }
+
+    template <class LO,class GO,class NO>
+    RCP<Map<LO,GO,NO>> getOuterInterfaceNodes(RCP<const CrsGraph<LO,GO,NO> > graph)
+    {
+        FROSCH_DETAILTIMER_START(getOuterInterfaceNodes,"getOuterInterfaceNodes");
+        const auto & rowMap = graph->getRowMap();
+        const auto & colMap = graph->getColMap();
+        auto interfaceIndexList = Teuchos::Array<GO>();
+        //TODO: interfaceIndexList.reserve()
+        for(auto & globalIndex: colMap->getNodeElementList()){
+            bool inRowMap = rowMap->isNodeGlobalElement(globalIndex);
+            if(!inRowMap){
+                interfaceIndexList.push_back(globalIndex);
+            }
+        }
+
+        auto invalidGlobal = Teuchos::OrdinalTraits<GO>::invalid();
+        RCP<Map<LO,GO,NO>> interfaceMap = MapFactory<LO,GO,NO>::Build(rowMap->lib(),invalidGlobal, interfaceIndexList, 0, graph->getComm());
+
+        RCP<FancyOStream> wrappedCout = getFancyOStream (rcpFromRef (std::cout));
+        interfaceMap->describe(*wrappedCout, Teuchos::VERB_EXTREME);
+        return interfaceMap;
+    }
+
+    template <class LO,class GO,class NO>
+    Teuchos::RCP<Xpetra::Vector<int, LO,GO,NO>> getOuterInterfaceNodesAsVectorBinaryEncoded(RCP<const CrsGraph<LO,GO,NO> > graph)
+    {
+        FROSCH_DETAILTIMER_START(getOuterInterfaceNodes,"getOuterInterfaceNodesAsVectorBinaryEncoded");
+        auto nodes = VectorFactory<int,LO,GO,NO>::Build(graph->getColMap());
+        int rank = graph->getComm()->getRank();
+        
+        const auto & rowMap = graph->getRowMap();
+        const auto & colMap = graph->getColMap();
+        auto interfaceIndexList = Teuchos::Array<GO>();
+        //TODO: interfaceIndexList.reserve()
+        for(auto & globalIndex: colMap->getNodeElementList()){
+            bool inRowMap = rowMap->isNodeGlobalElement(globalIndex);
+            if(!inRowMap){
+                nodes->sumIntoGlobalValue(globalIndex, pow(2,rank));
+            }
+        }
+
+        RCP<FancyOStream> wrappedCout = getFancyOStream (rcpFromRef (std::cout));
+        nodes->describe(*wrappedCout, Teuchos::VERB_EXTREME);
+        return nodes;
+    }
+
+
 
     //! Returns a map which has the same distribution as the inputMap, but is ordered by the global Index.
     template <class LO,class GO,class NO>
