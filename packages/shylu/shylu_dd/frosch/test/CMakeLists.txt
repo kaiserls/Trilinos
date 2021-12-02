@@ -1,5 +1,4 @@
 ADD_SUBDIRECTORIES(
-    FROSch_WithoutThyra
     Import_Tpetra
     InterfacePartitionOfUnity
     InterfaceSets
