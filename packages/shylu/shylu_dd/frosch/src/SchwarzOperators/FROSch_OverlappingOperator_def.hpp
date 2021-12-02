@@ -294,6 +294,7 @@ namespace FROSch {
             std::cout<<"AFTERSOLVE"<<lhs.getGlobalLength()<<" "<<W_->getGlobalLength()<<std::endl;
             std::cout<<"AFTERSOLVE"<<lhs.getLocalLength()<<" "<<W_->getLocalLength()<<" " <<std::endl;
             YOverlap_ = MultiVectorFactory<SC,LO,GO,NO>::Build(lhs.getMap(),lhs.getNumVectors());
+            W_->replaceMap(OverlappingMap_);
             prolongateFromInto(W_, YOverlap_, lhs);
             std::cout<<"prolongated"<<std::endl;
             lhs.update(1.,*YOverlap_, 1.);//lhs+W_
