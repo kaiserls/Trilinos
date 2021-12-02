@@ -116,8 +116,8 @@ namespace FROSch {
         virtual void restrictFromInto(const XMultiVectorPtr XTmp, XMultiVectorPtr & XOverlap) const;
         virtual void prolongateFromInto(const XMultiVectorPtr YOverlap, XMultiVectorPtr XTmp, const XMultiVector & y) const;
 
-        ConstXMatrixPtr OverlappingMatrix_; //! Distributed overlapping matrix
-
+        //TODO: Rename. Code would be much easier to understand if "LocalOverlappingMatrix_" and GlobalOverlappingMap_"
+        ConstXMatrixPtr OverlappingMatrix_; //! Local overlapping matrix (neglecting the initialization with the globally distributed matrix K_)
         ConstXMapPtr OverlappingMap_; //! Distribution of the nodes/node indices over the ranks
 
         // Temp Vectors for apply()
