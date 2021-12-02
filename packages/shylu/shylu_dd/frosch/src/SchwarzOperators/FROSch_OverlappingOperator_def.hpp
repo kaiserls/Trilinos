@@ -82,7 +82,7 @@ namespace FROSch {
         FROSCH_TIMER_START_LEVELID(applyTime,"OverlappingOperator::restrict");
         FROSCH_ASSERT(this->IsInitialized_,"FROSch::OverlappingOperator: OverlappingOperator has to be initialized before calling apply()");
 
-        if (XTmp->getMap()->lib() == UseEpetra) {
+        if (XTmp->getMap()->lib() == UseEpetra) { // AH 11/28/2018: For Epetra, XOverlap_ will only have a view to the values of XOverlapTmp_. Therefore, xOverlapTmp should not be deleted before XOverlap_ is used.
 #ifdef HAVE_XPETRA_EPETRA
             if (XOverlapTmp_.is_null()) XOverlapTmp_ = MultiVectorFactory<SC,LO,GO,NO>::Build(OverlappingMap_,XTmp->getNumVectors());
             XOverlapTmp_->doImport(*XTmp,*Scatter_,INSERT);
@@ -171,8 +171,6 @@ namespace FROSch {
     }
 
     //! Y = alpha * A^mode * X + beta * Y
-    //TODO: Explain the different steps beforehand or in the code. Same could be achieved by creating
-    // more subfunctions and giving them good names.
     template <class SC,class LO,class GO,class NO>
     void OverlappingOperator<SC,LO,GO,NO>::apply(const XMultiVector &x,
                                                  XMultiVector &y,
@@ -183,30 +181,23 @@ namespace FROSch {
     {
         FROSCH_TIMER_START_LEVELID(applyTime,"OverlappingOperator::apply");
         FROSCH_ASSERT(this->IsComputed_,"FROSch::OverlappingOperator: OverlappingOperator has to be computed before calling apply()");
-
-        if (XTmp_.is_null()) XTmp_ = MultiVectorFactory<SC,LO,GO,NO>::Build(x.getMap(),x.getNumVectors());
-        *XTmp_ = x;
-
-        // Apply K first if the framework is not only used as preconditioner: P = M^-1 K
-        // If mode != NO_TRANS it is applied at the end
-        if (!usePreconditionerOnly && mode == NO_TRANS) {
-            this->K_->apply(x,*XTmp_,mode,ScalarTraits<SC>::one(),ScalarTraits<SC>::zero());
-        }
-        
-        restrictFromInto(XTmp_, XOverlap_);
-
-        // AH 11/28/2018: For Epetra, XOverlap_ will only have a view to the values of XOverlapTmp_. Therefore, xOverlapTmp should not be deleted before XOverlap_ is used.
+        // Temporary vectors for input/result of local subdomainSolver and matrix vector operations
         if (YOverlap_.is_null()) {
             YOverlap_ = MultiVectorFactory<SC,LO,GO,NO>::Build(OverlappingMatrix_->getDomainMap(),x.getNumVectors());
         } else {
             YOverlap_->replaceMap(OverlappingMatrix_->getDomainMap());
         }
-        if(HarmonicOnOverlap_){
-            std::cout<<"APPLY"<<XOverlap_->getGlobalLength()<<" "<<W_->getGlobalLength()<<std::endl;
+        if (XTmp_.is_null()) XTmp_ = MultiVectorFactory<SC,LO,GO,NO>::Build(x.getMap(),x.getNumVectors());
+
+        *XTmp_ = x;
+        // Apply K first if the framework is not only used as preconditioner: P = M^-1 K
+        if (!usePreconditionerOnly && mode == NO_TRANS) { // If mode != NO_TRANS it is applied at the end
+            this->K_->apply(x,*XTmp_,mode,ScalarTraits<SC>::one(),ScalarTraits<SC>::zero());
         }
+        
+        restrictFromInto(XTmp_, XOverlap_); //Restrict into the local overlapping subdomain vector
         SubdomainSolver_->apply(*XOverlap_,*YOverlap_,mode,ScalarTraits<SC>::one(),ScalarTraits<SC>::zero());
         YOverlap_->replaceMap(OverlappingMap_);
-
         prolongateFromInto(YOverlap_, XTmp_,y);//y is there to provide a unique map for the restricted import
 
         if (!usePreconditionerOnly && mode != NO_TRANS) {
@@ -260,43 +251,38 @@ namespace FROSch {
         return SubdomainSolver_->compute();
     }
 
-    // Adapt the rhs of the system to make the initial residual compatible with the preconditioner
+    //! Adapt the rhs of the system to make the initial residual compatible with the preconditioner
     template <class SC,class LO,class GO,class NO>
     void OverlappingOperator<SC,LO,GO,NO>::preSolve(XMultiVector & rhs){
         // See "Restricted Additive Schwarz Preconditioners with Harmonic Overlap
         // for Symmetric Positive Definite Linear Systems", (3.5)
-        if(HarmonicOnOverlap_){
+        if(HarmonicOnOverlap_){ // TODO: Do i have to calculate g? See formula 3.9 in restricted harmonic
             FROSCH_ASSERT(this->isComputed(),"Compute preconditioner before starting preSolve routine");
             W_ = MultiVectorFactory<SC,LO,GO,NO>::Build(OverlappingMatrix_->getDomainMap(),1);
             RCP<XMultiVector> rhsRCP = RCP<XMultiVector>(&rhs, false);
             restrictFromInto(rhsRCP, XOverlap_);
-                    std::cout<<"PRESOLVE"<<XOverlap_->getGlobalLength()<<" "<<W_->getGlobalLength()<<std::endl;
-
             SubdomainSolver_->apply(*XOverlap_,*W_, NO_TRANS,ScalarTraits<SC>::one(),ScalarTraits<SC>::zero());
             auto Aw = MultiVectorFactory<SC,LO,GO,NO>::Build(rhs.getMap(),1);
             this->K_->apply(*W_, *Aw);
             rhs.update(-1,*Aw,1);//rhs-A*w
-        } else {
-            //Do nothing
         }
-            // TODO: Do i have to calculate g? See formula 3.9 in restricted harmonic
     }
 
-    // Adapt the solution of the system to obtain the correct solution,
-    // despite the change in the rhs in the preSolve function
+    //! Adapt the solution of the system to obtain the correct solution,
+    //! despite the change in the rhs in the preSolve function
     template <class SC,class LO,class GO,class NO>
     void OverlappingOperator<SC,LO,GO,NO>::afterSolve(XMultiVector & lhs){
         // Transform the harmonic solution back to the solution of the nonharmonic system using
         // w from Equation 3.5
         if(HarmonicOnOverlap_){
             FROSCH_ASSERT(this->isComputed(),"Compute preconditioner before starting afterSolve routine");
-            FROSCH_ASSERT(W_ != null,"Did not compute solve");
-            std::cout<<"AFTERSOLVE"<<lhs.getGlobalLength()<<" "<<W_->getGlobalLength()<<std::endl;
-            std::cout<<"AFTERSOLVE"<<lhs.getLocalLength()<<" "<<W_->getLocalLength()<<" " <<std::endl;
+            FROSCH_ASSERT(W_ != null,"Run preSolve before solving the system and running the current function, afterSolve");
             YOverlap_ = MultiVectorFactory<SC,LO,GO,NO>::Build(lhs.getMap(),lhs.getNumVectors());
             W_->replaceMap(OverlappingMap_);
             prolongateFromInto(W_, YOverlap_, lhs);
-            std::cout<<"prolongated"<<std::endl;
+            // std::cout<<"AFTERSOLVE: lhs "<<lhs.getLocalLength()<<" "<<lhs.getGlobalLength()<<" " <<std::endl;
+            // std::cout<<"AFTERSOLVE: W_ "<<W_->getLocalLength()<<" "<<W_->getGlobalLength()<<std::endl;
+            // std::cout<<"AFTERSOLVE: YOverlap_ "<<YOverlap_->getLocalLength()<<" "<<YOverlap_->getGlobalLength()<<std::endl;
             lhs.update(1.,*YOverlap_, 1.);//lhs+W_
         }
     }
