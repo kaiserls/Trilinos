@@ -286,6 +286,17 @@ namespace FROSch {
             lhs.update(1.,*YOverlap_, 1.);//lhs+W_
         }
     }
+
+    template <class SC,class LO,class GO,class NO>
+    int OverlappingOperator<SC,LO,GO,NO>::updateLocalOverlappingMatrices()
+    {
+        FROSCH_DETAILTIMER_START_LEVELID(updateLocalOverlappingMatricesTime,"AlgebraicOverlappingOperator::updateLocalOverlappingMatrices");
+        if (this->IsComputed_) { // already computed once and we want to recycle the information. That is why we reset OverlappingMatrix_ to K_, because K_ has been reset at this point
+            this->OverlappingMatrix_ = this->K_;
+        }
+        this->OverlappingMatrix_ = ExtractLocalSubdomainMatrix(this->OverlappingMatrix_,this->OverlappingMap_);//, &(this->GlobalOverlappingMatrix_));
+        return 0;
+    }
 }
 
 #endif

@@ -111,7 +111,7 @@ namespace FROSch {
 
         virtual int computeOverlappingOperator();
 
-        virtual int updateLocalOverlappingMatrices() = 0;
+        virtual int updateLocalOverlappingMatrices();
 
         virtual void restrictFromInto(const XMultiVectorPtr XTmp, XMultiVectorPtr & XOverlap) const;
         virtual void prolongateFromInto(const XMultiVectorPtr YOverlap, XMultiVectorPtr XTmp, const XMultiVector & y) const;
