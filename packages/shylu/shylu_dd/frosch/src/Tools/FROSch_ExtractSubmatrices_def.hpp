@@ -52,10 +52,10 @@ namespace FROSch {
     using namespace Xpetra;
 
     /*
-     * @brief //TODO: What is the difference between the subdomain matrix and the global matrix?
+     * @brief Extracts a locally stored matrix (->with serial communicator) containing the entries from the globalMatrix which belong to the passed map
      * 
-     * @param globalMatrix 
-     * @param map 
+     * @param globalMatrix The matrix containing the needed entries
+     * @param map The map specifing the entries which should be extracted from the matrix
      * @return RCP<const Matrix<SC,LO,GO,NO> > The extracted local subdomain matrix
      */
     template <class SC,class LO,class GO,class NO>
