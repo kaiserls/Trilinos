@@ -307,7 +307,7 @@ namespace FROSch {
                     break;
             }
         }
-
+        this->GlobalOverlappingGraph_ = this->OverlappingMatrix_->getCrsGraph();
         return 0;
     }
 }

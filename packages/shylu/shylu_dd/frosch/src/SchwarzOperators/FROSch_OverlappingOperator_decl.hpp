@@ -142,6 +142,10 @@ protected:
         bool HarmonicOnOverlap_ = false; //! Use harmonic decay of subdomain "solution" on overlap
                                          //! Sarkis, Marcus. "Partition of unity coarse spaces and Schwarz methods with
                                          //! harmonic overlap." Recent Developments in Domain Decomposition Methods. Springer, Berlin, Heidelberg, 2002. 77-94.
+        XImportPtr ScatterNonoverlapping_;
+        
+        RCP<const Xpetra::CrsGraph<LO,GO,NO>> GlobalOverlappingGraph_; //! Globally distributed overlapping matrix
+        XMatrixPtr GlobalOverlappingMatrix_;
     };
 
 }

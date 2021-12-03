@@ -220,6 +220,11 @@ namespace FROSch {
             XExportPtr multiplicityExporter = ExportFactory<LO,GO,NO>::Build(multiplicityRepeated->getMap(),this->getRangeMap());
             Multiplicity_->doExport(*multiplicityRepeated,*multiplicityExporter,ADD);
         }
+        if(HarmonicOnOverlap_){
+
+            // Create importer between the (non)overlapping part and the extendend domain
+            ScatterNonoverlapping_= ImportFactory<LO,GO,NO>::Build(this->getDomainMap(),OverlappingMap_);//TODO: Replace overlappingMap with map where only nodes of the nonoverlapping domain is contained
+        }
 
         return 0; // RETURN VALUE
     }
