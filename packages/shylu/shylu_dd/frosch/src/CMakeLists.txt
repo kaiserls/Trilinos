@@ -145,6 +145,7 @@ APPEND_SET(HEADERS
   SolverInterfaces/FROSch_ThyraPreconditioner_def.hpp
   SolverInterfaces/FROSch_ThyraSolver_decl.hpp
   SolverInterfaces/FROSch_ThyraSolver_def.hpp
+  Tools/FROSch_Debugging.hpp
   Tools/FROSch_ExtractSubmatrices_decl.hpp
   Tools/FROSch_ExtractSubmatrices_def.hpp
   Tools/FROSch_Output.h
