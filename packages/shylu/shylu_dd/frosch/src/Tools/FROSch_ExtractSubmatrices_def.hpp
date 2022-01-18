@@ -59,7 +59,7 @@ namespace FROSch {
      * @return RCP<const Matrix<SC,LO,GO,NO> > The extracted local subdomain matrix
      */
     template <class SC,class LO,class GO,class NO>
-    RCP<const Matrix<SC,LO,GO,NO> > ExtractLocalSubdomainMatrix(RCP<const Matrix<SC,LO,GO,NO> > globalMatrix,
+    RCP<Matrix<SC,LO,GO,NO> > ExtractLocalSubdomainMatrixNonConst(RCP<const Matrix<SC,LO,GO,NO> > globalMatrix,
                                                                 RCP<const Map<LO,GO,NO> > map)
     {
         FROSCH_DETAILTIMER_START(extractLocalSubdomainMatrixTime,"ExtractLocalSubdomainMatrix");
@@ -91,7 +91,7 @@ namespace FROSch {
             }
         }
         localSubdomainMatrix->fillComplete();
-        return localSubdomainMatrix.getConst();
+        return localSubdomainMatrix;
     }
 
     //! Like ExtractLocalSubdomainMatrix(globalMatrix,map), but all entries will have the passed value
@@ -328,6 +328,13 @@ namespace FROSch {
         kII->fillComplete(mapI,mapI);
 
         return 0;
+    }
+
+    template <class SC,class LO,class GO,class NO>
+    RCP<const Matrix<SC,LO,GO,NO> > ExtractLocalSubdomainMatrix(RCP<const Matrix<SC,LO,GO,NO> > globalMatrix,
+                                                                RCP<const Map<LO,GO,NO> > map)
+    {
+        return ExtractLocalSubdomainMatrixNonConst(globalMatrix, map).getConst();
     }
 }
 
