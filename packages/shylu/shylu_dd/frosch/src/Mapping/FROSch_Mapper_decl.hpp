@@ -84,7 +84,7 @@ namespace FROSch {
         void setGlobalMap(XMultiVector &localVector);
 
     //protected:
-        enum CombineMode {Averaging,Full,Restricted};
+        enum CombinationType {Averaging,Full,Restricted};
 
         ConstXMapPtr UniqueMap_; 
         ConstXMapPtr OverlappingMap_;
@@ -94,7 +94,7 @@ namespace FROSch {
         XImportPtr Import_;
         XExportPtr Export_;
 
-        CombineMode Combine_;
+        CombinationType Combine_;
         XMultiVectorPtr Multiplicity_;//Move to restricted subclass
 
         mutable XMultiVectorPtr XOverlapTmp_;

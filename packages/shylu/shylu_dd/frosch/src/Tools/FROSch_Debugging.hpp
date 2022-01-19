@@ -56,12 +56,12 @@ inline void writeMeta(int nx, int ny, int processes){
 }
 
 template <class vector_type, class map_type>
-inline void output(const vector_type vec, const map_type globalMap ){
+inline void output(const vector_type vec, const map_type globalUniqueMap ){
     auto map = vec->getMap();
     int proc= map ->getComm()->getRank();
     // Write meta once
     if(proc == 0){
-        int n = int(sqrt(globalMap->getGlobalNumElements()));//unique map
+        int n = int(sqrt(globalUniqueMap->getGlobalNumElements()));//unique map
         int procs = map ->getComm()->getSize();
         writeMeta(n,n, procs);
     }

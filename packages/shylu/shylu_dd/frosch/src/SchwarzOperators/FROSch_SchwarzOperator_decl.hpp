@@ -224,6 +224,9 @@ namespace FROSch {
                            SC alpha=ScalarTraits<SC>::one(),
                            SC beta=ScalarTraits<SC>::zero()) const = 0;
 
+        virtual void preSolve(XMultiVector & rhs);
+        virtual void afterSolve(XMultiVector & lhs);
+        
         virtual ConstXMapPtr getDomainMap() const;
 
         virtual ConstXMapPtr getRangeMap() const;

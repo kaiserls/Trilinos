@@ -43,7 +43,7 @@
 #define _FROSCH_ONELEVELPRECONDITIONER_DECL_HPP
 
 #include <FROSch_SchwarzPreconditioner_def.hpp>
-
+#include <FROSch_HarmonicOverlappingOperator_def.hpp>
 
 namespace FROSch {
 
@@ -76,6 +76,7 @@ namespace FROSch {
         using MultiplicativeOperatorPtr         = typename SchwarzPreconditioner<SC,LO,GO,NO>::MultiplicativeOperatorPtr;
         using OverlappingOperatorPtr            = typename SchwarzPreconditioner<SC,LO,GO,NO>::OverlappingOperatorPtr;
         using AlgebraicOverlappingOperatorPtr   = typename SchwarzPreconditioner<SC,LO,GO,NO>::AlgebraicOverlappingOperatorPtr;
+        using HarmonicOverlappingOperatorPtr    = RCP<AlgebraicOverlappingOperator<SC,LO,GO,NO>>;
 
     public:
 

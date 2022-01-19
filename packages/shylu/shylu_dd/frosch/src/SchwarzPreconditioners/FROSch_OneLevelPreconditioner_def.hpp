@@ -58,11 +58,16 @@ namespace FROSch {
     K_ (k), OverlappingOperator_ ()
     {
         FROSCH_DETAILTIMER_START_LEVELID(oneLevelPreconditionerTime,"OneLevelPreconditioner::OneLevelPreconditioner");
-        if (!this->ParameterList_->get("OverlappingOperator Type","AlgebraicOverlappingOperator").compare("AlgebraicOverlappingOperator")) {
+        string OverlappingOperatorType = this->ParameterList_->get("OverlappingOperator Type","AlgebraicOverlappingOperator");
+        if (!OverlappingOperatorType.compare("AlgebraicOverlappingOperator")) {
             // Set the LevelID in the sublist
             parameterList->sublist("AlgebraicOverlappingOperator").set("Level ID",this->LevelID_);
             OverlappingOperator_ = AlgebraicOverlappingOperatorPtr(new AlgebraicOverlappingOperator<SC,LO,GO,NO>(k,sublist(parameterList,"AlgebraicOverlappingOperator")));
-        } else {
+        } else if(!OverlappingOperatorType.compare("HarmonicOverlappingOperator")) {
+            // Set the LevelID in the sublist
+            parameterList->sublist("HarmonicOverlappingOperator").set("Level ID",this->LevelID_);
+            OverlappingOperator_ = HarmonicOverlappingOperatorPtr(new HarmonicOverlappingOperator<SC,LO,GO,NO>(k,sublist(parameterList,"HarmonicOverlappingOperator")));
+        } else{
             FROSCH_ASSERT(false,"OverlappingOperator Type unkown.");
         }
         if (!this->ParameterList_->get("Level Combination","Additive").compare("Multiplicative")) {
@@ -103,9 +108,13 @@ namespace FROSch {
         if (overlap<0) {
             overlap = this->ParameterList_->get("Overlap",1);
         }
-        if (!this->ParameterList_->get("OverlappingOperator Type","AlgebraicOverlappingOperator").compare("AlgebraicOverlappingOperator")) {
+        string OverlappingOperatorType = this->ParameterList_->get("OverlappingOperator Type","AlgebraicOverlappingOperator");
+        if (!OverlappingOperatorType.compare("AlgebraicOverlappingOperator")) {
             AlgebraicOverlappingOperatorPtr algebraicOverlappigOperator = rcp_static_cast<AlgebraicOverlappingOperator<SC,LO,GO,NO> >(OverlappingOperator_);
             ret = algebraicOverlappigOperator->initialize(overlap,repeatedMap);
+        } else if (!OverlappingOperatorType.compare("HarmonicOverlappingOperator")) {
+            HarmonicOverlappingOperatorPtr harmonicOverlappigOperator = rcp_static_cast<HarmonicOverlappingOperator<SC,LO,GO,NO> >(OverlappingOperator_);
+            ret = harmonicOverlappigOperator->initialize(overlap,repeatedMap);
         } else {
             FROSCH_ASSERT(false,"OverlappingOperator Type unkown.");
         }

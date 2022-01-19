@@ -20,9 +20,9 @@
         <ParameterList name="FROSch">
             <Parameter name="FROSch Preconditioner Type"                        type="string"   value="OneLevelPreconditioner"/>
             
-            <Parameter name="OverlappingOperator Type"                          type="string"   value="AlgebraicOverlappingOperator"/>
+            <Parameter name="OverlappingOperator Type"                          type="string"   value="HarmonicOverlappingOperator"/>
             
-            <ParameterList name="AlgebraicOverlappingOperator">
+            <ParameterList name="HarmonicOverlappingOperator">
                 <Parameter name="Combine Values in Overlap"                     type="string" value="Restricted"/><!--Restricted,Averaging,Full-->
                 <Parameter name="HarmonicOnOverlap"                             type="bool"   value="1"/>
                 <Parameter name="Adding Layers Strategy"                        type="string"   value="CrsMatrix"/>

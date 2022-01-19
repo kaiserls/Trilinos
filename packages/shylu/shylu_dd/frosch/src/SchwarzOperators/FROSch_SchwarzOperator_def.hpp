@@ -87,6 +87,12 @@ namespace FROSch {
     }
 
     template<class SC,class LO,class GO,class NO>
+    void SchwarzOperator<SC,LO,GO,NO>::preSolve(XMultiVector & rhs){}
+    
+    template<class SC,class LO,class GO,class NO>
+    void SchwarzOperator<SC,LO,GO,NO>::afterSolve(XMultiVector & lhs){}
+
+    template<class SC,class LO,class GO,class NO>
     typename SchwarzOperator<SC,LO,GO,NO>::ConstXMapPtr SchwarzOperator<SC,LO,GO,NO>::getDomainMap() const
     {
         return K_->getDomainMap();

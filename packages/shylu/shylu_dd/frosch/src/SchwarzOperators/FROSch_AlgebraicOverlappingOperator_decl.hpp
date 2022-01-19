@@ -102,6 +102,8 @@ namespace FROSch {
         int buildOverlappingMatrices(int overlap,
                                      ConstXMapPtr repeatedMap);
 
+        RCP<const Xpetra::CrsGraph<LO,GO,NO>> GlobalOverlappingGraph_; //! Globally distributed graph of the overlapping matrix
+
          //! The employed AddingLayersStrategy to construct the overlap
         AddingLayersStrategy AddingLayersStrategy_ = LayersFromGraph;
     };

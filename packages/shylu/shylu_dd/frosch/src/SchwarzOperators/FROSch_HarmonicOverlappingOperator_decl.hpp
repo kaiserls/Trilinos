@@ -39,25 +39,23 @@
 // ************************************************************************
 //@HEADER
 
-#ifndef _FROSCH_OVERLAPPINGOPERATOR_DECL_HPP
-#define _FROSCH_OVERLAPPINGOPERATOR_DECL_HPP
+#ifndef _FROSCH_HARMONICOVERLAPPINGOPERATOR_DECL_HPP
+#define _FROSCH_HARMONICOVERLAPPINGOPERATOR_DECL_HPP
 
-#include <FROSch_SchwarzOperator_def.hpp>
-#include <FROSch_Mapper_def.hpp>
+#include <FROSch_AlgebraicOverlappingOperator_def.hpp>
 
 
 namespace FROSch {
 
+    using namespace std;
     using namespace Teuchos;
     using namespace Xpetra;
 
-    //! A SchwarzOperator which belongs to an overlapping domain decomposition.
-    //! This allows to implement the apply operation of the SchwarzOperator.
     template <class SC = double,
               class LO = int,
               class GO = DefaultGlobalOrdinal,
               class NO = KokkosClassic::DefaultNode::DefaultNodeType>
-    class OverlappingOperator : public SchwarzOperator<SC,LO,GO,NO> {
+    class HarmonicOverlappingOperator : public AlgebraicOverlappingOperator<SC,LO,GO,NO> {
 
     protected:
 
@@ -72,71 +70,49 @@ namespace FROSch {
         using XMultiVector          = typename SchwarzOperator<SC,LO,GO,NO>::XMultiVector;
         using XMultiVectorPtr       = typename SchwarzOperator<SC,LO,GO,NO>::XMultiVectorPtr;
 
-        using XImportPtr            = typename SchwarzOperator<SC,LO,GO,NO>::XImportPtr;
-        using XExportPtr            = typename SchwarzOperator<SC,LO,GO,NO>::XExportPtr;
+        using ConstXCrsGraphPtr     = typename SchwarzOperator<SC,LO,GO,NO>::ConstXCrsGraphPtr;
 
         using ParameterListPtr      = typename SchwarzOperator<SC,LO,GO,NO>::ParameterListPtr;
-
+        
         using SolverPtr             = typename SchwarzOperator<SC,LO,GO,NO>::SolverPtr;
         using SolverFactoryPtr      = typename SchwarzOperator<SC,LO,GO,NO>::SolverFactoryPtr;
 
-        using SCVecPtr              = typename SchwarzOperator<SC,LO,GO,NO>::SCVecPtr;
-        using ConstSCVecPtr         = typename SchwarzOperator<SC,LO,GO,NO>::ConstSCVecPtr;
-
-        using UN                    = typename SchwarzOperator<SC,LO,GO,NO>::UN;
-        
         using MapperPtr             = RCP<Mapper<SC,LO,GO,NO>>;
         using CombinationType       = typename Mapper<SC,LO,GO,NO>::CombinationType;
 
     public:
-        using SchwarzOperator<SC,LO,GO,NO>::apply;
 
-        OverlappingOperator(ConstXMatrixPtr k,
-                            ParameterListPtr parameterList);
+        HarmonicOverlappingOperator(ConstXMatrixPtr k,
+                                     ParameterListPtr parameterList);
 
-        ~OverlappingOperator();
-
-        virtual int initialize() = 0;
-
-        virtual int compute() = 0;
-
-        virtual void apply(const XMultiVector &x,
-                           XMultiVector &y,
-                           bool usePreconditionerOnly,
-                           ETransp mode=NO_TRANS,
-                           SC alpha=ScalarTraits<SC>::one(),
-                           SC beta=ScalarTraits<SC>::zero()) const;
-
-    protected:
         virtual int initializeOverlappingOperator();
 
-        virtual int computeOverlappingOperator();
+        //int compute();
+        virtual string description() const;
 
-        virtual int updateLocalOverlappingMatrices();
+        virtual void preSolve(XMultiVector & rhs);
+        virtual void afterSolve(XMultiVector & lhs);
 
-        virtual void restrictFromInto(const XMultiVectorPtr source, XMultiVectorPtr & target) const;
-        virtual void prolongateFromInto(const XMultiVectorPtr source, XMultiVectorPtr target, const ConstXMapPtr uniqueMap) const;
-        int calculateMultiplicity();
+    protected:
+        bool HarmonicOnOverlap_ = false; //! Use harmonic decay of subdomain "solution" on overlap
+        //Harmonic
+        //! Sarkis, Marcus. "Partition of unity coarse spaces and Schwarz methods with
+        //! harmonic overlap." Recent Developments in Domain Decomposition Methods. Springer, Berlin, Heidelberg, 2002. 77-94.
+        ConstXMapPtr OvlpMap_; //Contains only the nodes in the area overlapping with others
+        ConstXMapPtr NonOvlpMap_; //Contains only the nodes which are not overlapping
+        ConstXMapPtr InterfaceMap_; //Contains only the nodes of (all) interfaces
+        ConstXMapPtr CutNodesMap_; //Contains the nodes on the interface but not in the own map
 
-        //TODO: Rename. Code would be much easier to understand if "LocalOverlappingMatrix_" and GlobalOverlappingMap_"
-        ConstXMatrixPtr OverlappingMatrix_; //! Local overlapping matrix (neglecting the initialization with the globally distributed matrix K_)
-        ConstXMapPtr OverlappingMap_; //! Distribution of the nodes/node indices over the ranks
+        MapperPtr OvlpMapper_;
+        MapperPtr NonOvlpMapper_;
 
-        // Temp Vectors for apply()
-        mutable XMultiVectorPtr XTmp_;
-        mutable XMultiVectorPtr XOverlap_;
-        mutable XMultiVectorPtr XOverlapTmp_;
-        mutable XMultiVectorPtr YOverlap_;
-
-        XImportPtr Scatter_; //! TODO: Comment: Describes how to exchange data between the overlapping map and the global uniquely distributed map???
-
-        SolverPtr SubdomainSolver_; //! Solver for the local problem on this subdomain. Used each time the operator is applied.
-
-        XMultiVectorPtr Multiplicity_; //! Stores in how many domains each node is contained.
-
-        CombinationType Combine_ = CombinationType::Averaging;
-
-        MapperPtr Mapper_;
+        XMultiVectorPtr W_;
+        mutable XMultiVectorPtr RhsPreSolveTmp_;
+        SolverPtr HarmonicSolver_; //TODO: Maybe delete after preSolve to save memory
+    
+    private:
+        virtual int setupHarmonicSolver();
+    
     };
 
 }

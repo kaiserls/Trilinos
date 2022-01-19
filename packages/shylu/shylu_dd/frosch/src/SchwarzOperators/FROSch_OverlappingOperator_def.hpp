@@ -43,7 +43,7 @@
 #define _FROSCH_OVERLAPPINGOPERATOR_DEF_HPP
 
 #include <FROSch_OverlappingOperator_decl.hpp>
-
+#include <FROSch_Debugging.hpp>
 
 namespace FROSch {
 
@@ -58,15 +58,11 @@ namespace FROSch {
     {
         FROSCH_DETAILTIMER_START_LEVELID(overlappingOperatorTime,"OverlappingOperator::OverlappingOperator");
         if (!this->ParameterList_->get("Combine Values in Overlap","Restricted").compare("Averaging")) {
-            Combine_ = Averaging;
+            Combine_ = CombinationType::Averaging;
         } else if (!this->ParameterList_->get("Combine Values in Overlap","Restricted").compare("Full")) {
-            Combine_ = Full;
+            Combine_ = CombinationType::Full;
         } else if (!this->ParameterList_->get("Combine Values in Overlap","Restricted").compare("Restricted")) {
-            Combine_ = Restricted;
-        }
-        HarmonicOnOverlap_ = this->ParameterList_->get("HarmonicOnOverlap",false);
-        if(HarmonicOnOverlap_){
-            FROSCH_ASSERT(Combine_ != Full, "Harmonic on overlap cannot be used with CombineMode==Full")
+            Combine_ = CombinationType::Restricted;
         }
     }
 
@@ -76,16 +72,17 @@ namespace FROSch {
         SubdomainSolver_.reset();
     }
 
+    //TODO: For harmonic(but not for the presolve/afterSolve): use altered scatter importer to reduce communication to nonoverlapping, restrictedMode?
     template <class SC,class LO,class GO,class NO>
-    void OverlappingOperator<SC,LO,GO,NO>::restrictFromInto(const XMultiVectorPtr XTmp, XMultiVectorPtr & XOverlap) const
+    void OverlappingOperator<SC,LO,GO,NO>::restrictFromInto(const XMultiVectorPtr source, XMultiVectorPtr & target) const
     {
         FROSCH_TIMER_START_LEVELID(applyTime,"OverlappingOperator::restrict");
         FROSCH_ASSERT(this->IsInitialized_,"FROSch::OverlappingOperator: OverlappingOperator has to be initialized before calling apply()");
 
-        if (XTmp->getMap()->lib() == UseEpetra) { // AH 11/28/2018: For Epetra, XOverlap_ will only have a view to the values of XOverlapTmp_. Therefore, xOverlapTmp should not be deleted before XOverlap_ is used.
+        if (source->getMap()->lib() == UseEpetra) { // AH 11/28/2018: For Epetra, XOverlap_ will only have a view to the values of XOverlapTmp_. Therefore, xOverlapTmp should not be deleted before XOverlap_ is used.
 #ifdef HAVE_XPETRA_EPETRA
-            if (XOverlapTmp_.is_null()) XOverlapTmp_ = MultiVectorFactory<SC,LO,GO,NO>::Build(OverlappingMap_,XTmp->getNumVectors());
-            XOverlapTmp_->doImport(*XTmp,*Scatter_,INSERT);
+            if (XOverlapTmp_.is_null()) XOverlapTmp_ = MultiVectorFactory<SC,LO,GO,NO>::Build(OverlappingMap_,source->getNumVectors());
+            XOverlapTmp_->doImport(*source,*Scatter_,INSERT);
             const RCP<const EpetraMultiVectorT<GO,NO> > xEpetraMultiVectorXOverlapTmp = rcp_dynamic_cast<const EpetraMultiVectorT<GO,NO> >(XOverlapTmp_);
             RCP<Epetra_MultiVector> epetraMultiVectorXOverlapTmp = xEpetraMultiVectorXOverlapTmp->getEpetra_MultiVector();
             const RCP<const EpetraMapT<GO,NO> >& xEpetraMap = rcp_dynamic_cast<const EpetraMapT<GO,NO> >(OverlappingMatrix_->getRangeMap());
@@ -93,50 +90,54 @@ namespace FROSch {
             double *A;
             int MyLDA;
             epetraMultiVectorXOverlapTmp->ExtractView(&A,&MyLDA);
-            RCP<Epetra_MultiVector> epetraMultiVectorXOverlap(new Epetra_MultiVector(::View,epetraMap,A,MyLDA,XTmp->getNumVectors()));
-            XOverlap = RCP<EpetraMultiVectorT<GO,NO> >(new EpetraMultiVectorT<GO,NO>(epetraMultiVectorXOverlap));
+            RCP<Epetra_MultiVector> epetraMultiVectorXOverlap(new Epetra_MultiVector(::View,epetraMap,A,MyLDA,source->getNumVectors()));
+            target = RCP<EpetraMultiVectorT<GO,NO> >(new EpetraMultiVectorT<GO,NO>(epetraMultiVectorXOverlap));
 #else
             FROSCH_ASSERT(false,"HAVE_XPETRA_EPETRA not defined.");
 #endif
         } else {
             // Do Import into overlapping local vector
-            if (XOverlap.is_null()) {
-                XOverlap = MultiVectorFactory<SC,LO,GO,NO>::Build(OverlappingMap_,XTmp->getNumVectors());
+            if (target.is_null()) {
+                target = MultiVectorFactory<SC,LO,GO,NO>::Build(OverlappingMap_,source->getNumVectors());
             } else {
-                XOverlap->replaceMap(OverlappingMap_);// to global communicator
+                target->replaceMap(OverlappingMap_);// to global communicator
             }
-            XOverlap->doImport(*XTmp,*Scatter_,INSERT);//unique XTmp to overlapping XOverlap
-            XOverlap->replaceMap(OverlappingMatrix_->getRangeMap());//global to local communicator, to prevent subdomain solvers communication
+            target->doImport(*source,*Scatter_,INSERT);//unique source to overlapping target
+            target->replaceMap(OverlappingMatrix_->getRangeMap());//global to local communicator, to prevent subdomain solvers communication
         }
     }
 
+    //TODO: for harmonic (but not pre/aftersolve)
+    //For restricted: Replace xmultivector by map containing the nodes which should be imported.
+    //                This would be getNonoverlappingNodesMap orSomeslightlymodified version for the restricted paper.
+    //For all other: Use altered scatter importer to reduce communication to nonoverlapping
+    //For averaging (additional): disable it, multiplicity will be never bigger than 1 for the nodes where the import happens
     template <class SC,class LO,class GO,class NO>
-    void OverlappingOperator<SC,LO,GO,NO>::prolongateFromInto(const XMultiVectorPtr YOverlap, XMultiVectorPtr XTmp, const XMultiVector & y) const
+    void OverlappingOperator<SC,LO,GO,NO>::prolongateFromInto(const XMultiVectorPtr source, XMultiVectorPtr target, const ConstXMapPtr uniqueMap) const
     {
         FROSCH_TIMER_START_LEVELID(applyTime,"OverlappingOperator::prolongate");
         FROSCH_ASSERT(this->IsInitialized_,"FROSch::OverlappingOperator: OverlappingOperator has to be initialized before calling prolongate()");
-        XTmp->putScalar(ScalarTraits<SC>::zero());
+        target->putScalar(ScalarTraits<SC>::zero());
         
-        if (Combine_ == Restricted) {
-            ConstXMapPtr yOverlapMap = YOverlap->getMap();
-            ConstXMapPtr yMap = y.getMap();
+        if (Combine_ == CombinationType::Restricted) {
+            ConstXMapPtr overlapMap = source->getMap();
 #if defined(HAVE_XPETRA_KOKKOS_REFACTOR) && defined(HAVE_XPETRA_TPETRA)
-            if (XTmp->getMap()->lib() == UseTpetra) {
-                auto yLocalMap = yMap->getLocalMap();
-                auto yLocalOverlapMap = yOverlapMap->getLocalMap();
+            if (target->getMap()->lib() == UseTpetra) {
+                auto localMap = uniqueMap->getLocalMap();
+                auto localOverlapMap = overlapMap->getLocalMap();
                 // run local restriction on execution space defined by local-map
                 using XMap            = typename SchwarzOperator<SC,LO,GO,NO>::XMap;
                 using execution_space = typename XMap::local_map_type::execution_space;
-                Kokkos::RangePolicy<execution_space> policy (0, yMap->getNodeNumElements());
-                for (UN i=0; i<y.getNumVectors(); i++) {
-                    auto yOverlapData_i = YOverlap->getData(i);
-                    auto xLocalData_i = XTmp->getDataNonConst(i);
+                Kokkos::RangePolicy<execution_space> policy (0, uniqueMap->getNodeNumElements());
+                for (UN i=0; i<target->getNumVectors(); i++) {
+                    auto sourceData_i = source->getData(i);
+                    auto targetLocalData_i = target->getDataNonConst(i);
                     Kokkos::parallel_for(
                       "FROSch_OverlappingOperator::applyLocalRestriction", policy,
                       KOKKOS_LAMBDA(const int j) {
-                        GO gID = yLocalMap.getGlobalElement(j);
-                        LO lID = yLocalOverlapMap.getLocalElement(gID);
-                        xLocalData_i[j] = yOverlapData_i[lID];
+                        GO gID = localMap.getGlobalElement(j);
+                        LO lID = localOverlapMap.getLocalElement(gID);
+                        targetLocalData_i[j] = sourceData_i[lID];
                       });
                 }
                 Kokkos::fence();
@@ -145,24 +146,24 @@ namespace FROSch {
             {
                 GO globID = 0;
                 LO localID = 0;
-                for (UN i=0; i<y.getNumVectors(); i++) {
-                    ConstSCVecPtr yOverlapData_i = YOverlap->getData(i);
-                    for (UN j=0; j<yMap->getNodeNumElements(); j++) {
-                        globID = yMap->getGlobalElement(j);
-                        localID = yOverlapMap->getLocalElement(globID);
-                        XTmp->getDataNonConst(i)[j] = yOverlapData_i[localID];
+                for (UN i=0; i<target->getNumVectors(); i++) {
+                    ConstSCVecPtr overlapData_i = source->getData(i);
+                    for (UN j=0; j<uniqueMap->getNodeNumElements(); j++) {
+                        globID = uniqueMap->getGlobalElement(j);
+                        localID = overlapMap->getLocalElement(globID);
+                        target->getDataNonConst(i)[j] = overlapData_i[localID];
                     }
                 }
             }
         } else { // All modes, excluding restricted
-            XTmp->doExport(*YOverlap,*Scatter_,ADD);
+            target->doExport(*source,*Scatter_,ADD);
         }
         
         // Divide the result by the number of subdomains which contributed to this value
-        if (Combine_ == Averaging) {
+        if (Combine_ == CombinationType::Averaging) {
             ConstSCVecPtr scaling = Multiplicity_->getData(0);
-            for (UN j=0; j<XTmp->getNumVectors(); j++) {
-                SCVecPtr values = XTmp->getDataNonConst(j);
+            for (UN j=0; j<target->getNumVectors(); j++) {
+                SCVecPtr values = target->getDataNonConst(j);
                 for (UN i=0; i<values.size(); i++) {
                     values[i] = values[i] / scaling[i];
                 }
@@ -198,7 +199,7 @@ namespace FROSch {
         restrictFromInto(XTmp_, XOverlap_); //Restrict into the local overlapping subdomain vector
         SubdomainSolver_->apply(*XOverlap_,*YOverlap_,mode,ScalarTraits<SC>::one(),ScalarTraits<SC>::zero());
         YOverlap_->replaceMap(OverlappingMap_);
-        prolongateFromInto(YOverlap_, XTmp_,y);//y is there to provide a unique map for the restricted import
+        prolongateFromInto(YOverlap_, XTmp_,y.getMap());//y is there to provide a unique map for the restricted import
 
         if (!usePreconditionerOnly && mode != NO_TRANS) {
             this->K_->apply(*XTmp_,*XTmp_,mode,ScalarTraits<SC>::one(),ScalarTraits<SC>::zero());
@@ -207,25 +208,26 @@ namespace FROSch {
     }
 
     template <class SC,class LO,class GO,class NO>
+    int OverlappingOperator<SC,LO,GO,NO>::calculateMultiplicity(){
+        Multiplicity_ = MultiVectorFactory<SC,LO,GO,NO>::Build(this->getRangeMap(),1);
+        XMultiVectorPtr multiplicityRepeated;
+        multiplicityRepeated = MultiVectorFactory<SC,LO,GO,NO>::Build(OverlappingMap_,1);
+        multiplicityRepeated->putScalar(ScalarTraits<SC>::one()); // Every node has at least multiplicity one
+        XExportPtr multiplicityExporter = ExportFactory<LO,GO,NO>::Build(multiplicityRepeated->getMap(),this->getRangeMap());
+        Multiplicity_->doExport(*multiplicityRepeated,*multiplicityExporter,ADD);
+        return 0;
+    }
+
+    template <class SC,class LO,class GO,class NO>
     int OverlappingOperator<SC,LO,GO,NO>::initializeOverlappingOperator()
     {
         FROSCH_DETAILTIMER_START_LEVELID(initializeOverlappingOperatorTime,"OverlappingOperator::initializeOverlappingOperator");
         Scatter_ = ImportFactory<LO,GO,NO>::Build(this->getDomainMap(),OverlappingMap_);
         // Calculate multiplicity if needed
-        if (Combine_ == Averaging || HarmonicOnOverlap_) {
-            Multiplicity_ = MultiVectorFactory<SC,LO,GO,NO>::Build(this->getRangeMap(),1);
-            XMultiVectorPtr multiplicityRepeated;
-            multiplicityRepeated = MultiVectorFactory<SC,LO,GO,NO>::Build(OverlappingMap_,1);
-            multiplicityRepeated->putScalar(ScalarTraits<SC>::one()); // Every node has at least multiplicity one
-            XExportPtr multiplicityExporter = ExportFactory<LO,GO,NO>::Build(multiplicityRepeated->getMap(),this->getRangeMap());
-            Multiplicity_->doExport(*multiplicityRepeated,*multiplicityExporter,ADD);
+        if (Combine_ == CombinationType::Averaging) {
+            calculateMultiplicity();
         }
-        if(HarmonicOnOverlap_){
-
-            // Create importer between the (non)overlapping part and the extendend domain
-            ScatterNonoverlapping_= ImportFactory<LO,GO,NO>::Build(this->getDomainMap(),OverlappingMap_);//TODO: Replace overlappingMap with map where only nodes of the nonoverlapping domain is contained
-        }
-
+        Mapper_= rcp(new Mapper<SC,LO,GO,NO>(this->getDomainMap(),OverlappingMap_, Multiplicity_));
         return 0; // RETURN VALUE
     }
 
@@ -256,42 +258,6 @@ namespace FROSch {
         return SubdomainSolver_->compute();
     }
 
-    //! Adapt the rhs of the system to make the initial residual compatible with the preconditioner
-    template <class SC,class LO,class GO,class NO>
-    void OverlappingOperator<SC,LO,GO,NO>::preSolve(XMultiVector & rhs){
-        // See "Restricted Additive Schwarz Preconditioners with Harmonic Overlap
-        // for Symmetric Positive Definite Linear Systems", (3.5)
-        if(HarmonicOnOverlap_){ // TODO: Do i have to calculate g? See formula 3.9 in restricted harmonic
-            FROSCH_ASSERT(this->isComputed(),"Compute preconditioner before starting preSolve routine");
-            W_ = MultiVectorFactory<SC,LO,GO,NO>::Build(OverlappingMatrix_->getDomainMap(),1);
-            RCP<XMultiVector> rhsRCP = RCP<XMultiVector>(&rhs, false);
-            restrictFromInto(rhsRCP, XOverlap_);
-            SubdomainSolver_->apply(*XOverlap_,*W_, NO_TRANS,ScalarTraits<SC>::one(),ScalarTraits<SC>::zero());
-            auto Aw = MultiVectorFactory<SC,LO,GO,NO>::Build(rhs.getMap(),1);
-            this->K_->apply(*W_, *Aw);
-            rhs.update(-1,*Aw,1);//rhs-A*w
-        }
-    }
-
-    //! Adapt the solution of the system to obtain the correct solution,
-    //! despite the change in the rhs in the preSolve function
-    template <class SC,class LO,class GO,class NO>
-    void OverlappingOperator<SC,LO,GO,NO>::afterSolve(XMultiVector & lhs){
-        // Transform the harmonic solution back to the solution of the nonharmonic system using
-        // w from Equation 3.5
-        if(HarmonicOnOverlap_){
-            FROSCH_ASSERT(this->isComputed(),"Compute preconditioner before starting afterSolve routine");
-            FROSCH_ASSERT(W_ != null,"Run preSolve before solving the system and running the current function, afterSolve");
-            YOverlap_ = MultiVectorFactory<SC,LO,GO,NO>::Build(lhs.getMap(),lhs.getNumVectors());
-            W_->replaceMap(OverlappingMap_);
-            prolongateFromInto(W_, YOverlap_, lhs);
-            // std::cout<<"AFTERSOLVE: lhs "<<lhs.getLocalLength()<<" "<<lhs.getGlobalLength()<<" " <<std::endl;
-            // std::cout<<"AFTERSOLVE: W_ "<<W_->getLocalLength()<<" "<<W_->getGlobalLength()<<std::endl;
-            // std::cout<<"AFTERSOLVE: YOverlap_ "<<YOverlap_->getLocalLength()<<" "<<YOverlap_->getGlobalLength()<<std::endl;
-            lhs.update(1.,*YOverlap_, 1.);//lhs+W_
-        }
-    }
-
     template <class SC,class LO,class GO,class NO>
     int OverlappingOperator<SC,LO,GO,NO>::updateLocalOverlappingMatrices()
     {
@@ -299,7 +265,7 @@ namespace FROSch {
         if (this->IsComputed_) { // already computed once and we want to recycle the information. That is why we reset OverlappingMatrix_ to K_, because K_ has been reset at this point
             this->OverlappingMatrix_ = this->K_;
         }
-        this->OverlappingMatrix_ = ExtractLocalSubdomainMatrix(this->OverlappingMatrix_,this->OverlappingMap_);//, &(this->GlobalOverlappingMatrix_));
+        this->OverlappingMatrix_ = ExtractLocalSubdomainMatrix(this->OverlappingMatrix_,this->OverlappingMap_);
         return 0;
     }
 }
