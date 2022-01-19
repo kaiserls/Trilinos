@@ -304,15 +304,22 @@ int main(int argc, char *argv[])
 
         RCP<MultiVector<SC,LO,GO,NO> > xSolution = MultiVectorFactory<SC,LO,GO,NO>::Build(KMonolithic->getMap(),1);
         RCP<MultiVector<SC,LO,GO,NO> > xRightHandSide = MultiVectorFactory<SC,LO,GO,NO>::Build(KMonolithic->getMap(),1);
+        RCP<MultiVector<SC,LO,GO,NO> > xSolutionModified = MultiVectorFactory<SC,LO,GO,NO>::Build(KMonolithic->getMap(),1);
+        RCP<MultiVector<SC,LO,GO,NO> > xRightHandSideModified = MultiVectorFactory<SC,LO,GO,NO>::Build(KMonolithic->getMap(),1);
 
         xSolution->putScalar(ScalarTraits<SC>::zero());
         xRightHandSide->putScalar(ScalarTraits<SC>::one());
+        xSolutionModified->putScalar(ScalarTraits<SC>::zero());
+        xRightHandSideModified->putScalar(ScalarTraits<SC>::one());
 
         CrsMatrixWrap<SC,LO,GO,NO>& crsWrapK = dynamic_cast<CrsMatrixWrap<SC,LO,GO,NO>&>(*KMonolithic);
         RCP<const LinearOpBase<SC> > K_thyra = ThyraUtils<SC,LO,GO,NO>::toThyra(crsWrapK.getCrsMatrix());
         RCP<MultiVectorBase<SC> >thyraX = rcp_const_cast<MultiVectorBase<SC> >(ThyraUtils<SC,LO,GO,NO>::toThyraMultiVector(xSolution));
         RCP<MultiVectorBase<SC> >thyraB = rcp_const_cast<MultiVectorBase<SC> >(ThyraUtils<SC,LO,GO,NO>::toThyraMultiVector(xRightHandSide));
 
+        RCP<MultiVectorBase<SC> >thyraXModified = rcp_const_cast<MultiVectorBase<SC> >(ThyraUtils<SC,LO,GO,NO>::toThyraMultiVector(xSolutionModified));
+        RCP<MultiVectorBase<SC> >thyraBModified = rcp_const_cast<MultiVectorBase<SC> >(ThyraUtils<SC,LO,GO,NO>::toThyraMultiVector(xRightHandSideModified));
+        
         //-----------Set Coordinates and RepMap in ParameterList--------------------------
         RCP<ParameterList> plList =  sublist(parameterList,"Preconditioner Types");
         sublist(plList,"FROSch")->set("Dimension",Dimension);
@@ -391,18 +398,29 @@ int main(int argc, char *argv[])
         
         Comm->barrier(); if (Comm->getRank()==0) cout << "###########################\n# PreSolve #\n###########################" << endl;
         // Preconditioner is called from FROSch Operator
-        froschLinearOp->preSolve(thyraB.ptr());
+        froschLinearOp->preSolve(thyraBModified.ptr());
         
         Comm->barrier(); if (Comm->getRank()==0) cout << "\n#########\n# Solve #\n#########" << endl;
         SolveStatus<double> status =
-        solve<double>(*solveOp, Thyra::NOTRANS, *thyraB, thyraX.ptr());
-        Comm->barrier(); if (Comm->getRank()==0) cout << "\n#############\n# Finished! #\n#############" << endl;
+        solve<double>(*solveOp, Thyra::NOTRANS, *thyraBModified, thyraXModified.ptr());
+        FROSCH_ASSERT(status.solveStatus==SOLVE_STATUS_CONVERGED, "Solver didn't converge");
+        //Comm->barrier(); if (Comm->getRank()==0) cout << "the error is: - for the new system:" << thyraB->col(0)->norm_1() << " for the olds system " << thyraB->col(0)->norm_1()<<std::endl;
 
         Comm->barrier(); if (Comm->getRank()==0) cout << "###########################\n# AfterSolve #\n###########################" << endl;
+        //K_thyra->apply(EOpTransp::NOTRANS, *thyraX, thyraBNew.ptr(),1.0,-1.0);
+        thyraX = thyraXModified->clone_mv();
         froschLinearOp->afterSolve(thyraX.ptr());
-        
-        FROSCH_ASSERT(status.solveStatus==SOLVE_STATUS_CONVERGED, "Solver didn't converge");
+        // check if it solves the original problem:
+        K_thyra->apply(EOpTransp::NOTRANS,*thyraX, thyraB.ptr(),1.0,-1.0);
+        K_thyra->apply(EOpTransp::NOTRANS,*thyraXModified, thyraBModified.ptr(),1.0,-1.0);
+        SC residualModifiedSystem=norm(*(thyraBModified->col(0)));
+        SC residualOriginalSystem=norm(*(thyraB->col(0)));
+        Comm->barrier(); if (Comm->getRank()==0) cout << "the error is: - for the Modified system: "<<residualModifiedSystem << " - for the original system: "<< residualOriginalSystem <<std::endl;
+        //FROSCH_ASSERT(res)
+        Comm->barrier(); if (Comm->getRank()==0) cout << "\n#############\n# Finished! #\n#############" << endl;
     }
+    
+
 
     CommWorld->barrier();
     stackedTimer->stop("Overlap Test");
