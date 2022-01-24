@@ -43,6 +43,7 @@
 #define _FROSCH_ALGEBRAICOVERLAPPINGPRECONDITIONER_DEF_HPP
 
 #include <FROSch_AlgebraicOverlappingPreconditioner_decl.hpp>
+#include <FROSch_HarmonicOverlappingOperator_def.hpp>
 
 
 namespace FROSch {
@@ -61,7 +62,12 @@ namespace FROSch {
         FROSCH_DETAILTIMER_START_LEVELID(algebraicOverlappingPreconditionerTime,"AlgebraicOverlappingPreconditioner::AlgebraicOverlappingPreconditioner");
         // Set the LevelID in the sublist
         parameterList->sublist("AlgebraicOverlappingOperator").set("Level ID",this->LevelID_);
-        OverlappingOperator_.reset(new AlgebraicOverlappingOperator<SC,LO,GO,NO>(k,sublist(parameterList,"AlgebraicOverlappingOperator")));
+        bool HarmonicOnOverlap = sublist(parameterList,"HarmonicOverlappingOperator")->get("HarmonicOnOverlap",false);
+        if(HarmonicOnOverlap){
+            OverlappingOperator_.reset(new HarmonicOverlappingOperator<SC,LO,GO,NO>(k,sublist(parameterList,"HarmonicOverlappingOperator")));
+        }else{
+            OverlappingOperator_.reset(new AlgebraicOverlappingOperator<SC,LO,GO,NO>(k,sublist(parameterList,"AlgebraicOverlappingOperator")));
+        }
         SumOperator_->addOperator(OverlappingOperator_);
     }
 

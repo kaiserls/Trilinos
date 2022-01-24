@@ -80,11 +80,19 @@ namespace FROSch {
     }
 
     template <class SC,class LO,class GO,class NO>
+    int HarmonicOverlappingOperator<SC,LO,GO,NO>::compute(){
+        AlgebraicOverlappingOperator<SC,LO,GO,NO>::compute();
+        if(HarmonicOnOverlap_){
+            setupHarmonicSolver();
+        }
+    }
+
+    template <class SC,class LO,class GO,class NO>
     int HarmonicOverlappingOperator<SC,LO,GO,NO>::setupHarmonicSolver(){
         FROSCH_DETAILTIMER_START_LEVELID(setupHarmonicSolver,"OverlappingOperator::setupHarmonicSolver");
 
         RCP<Matrix<SC,LO,GO,NO>> ovlpMatrix = ExtractLocalSubdomainMatrixNonConst<SC,LO,GO,NO>(this->K_, OvlpMap_);
-        // Set dirichlet bc on the interface nodes
+        // Set dirichlet bc on the interface/cut interface nodes
         ovlpMatrix->resumeFill();
         size_t nEntriesMax = 7;
         Array<LO> localColumns=Array<LO>(nEntriesMax);
@@ -97,11 +105,10 @@ namespace FROSch {
             //change to dirichlet row
             for(LO i = 0; i<nEntries; i++){
                 values[i] = OvlpMap_->getGlobalElement(localColumns[i])==globalRow ? 1.0 : 0.0; //diagonal (dirichlet) : non diagonal
-            }                
+            }
             ovlpMatrix->replaceLocalValues(localRow, localColumns(0,nEntries), values(0,nEntries));
         }
         ovlpMatrix->fillComplete();
-        // //TODO: Fix for existing solver, reuse
         HarmonicSolver_ = SolverFactory<SC,LO,GO,NO>::Build(ovlpMatrix,
                                                              sublist(this->ParameterList_,"Solver"),
                                                              string("Solver (Level ") + to_string(this->LevelID_) + string(")"));
@@ -120,8 +127,6 @@ namespace FROSch {
         // See "Restricted Additive Schwarz Preconditioners with Harmonic Overlap
         // for Symmetric Positive Definite Linear Systems", (3.5)
         if(HarmonicOnOverlap_){ // TODO: Do i have to calculate g? See formula 3.9 in restricted harmonic
-            setupHarmonicSolver();//TODO: Move to compute
-            
             //Calculate the harmonizing solution W and adapt rhs
             W_ = MultiVectorFactory<SC,LO,GO,NO>::Build(OvlpMap_,1); //Build(OverlappingMatrix_->getDomainMap(),1);
             RhsPreSolveTmp_= MultiVectorFactory<SC,LO,GO,NO>::Build(OvlpMap_, 1);
@@ -132,7 +137,7 @@ namespace FROSch {
             RhsPreSolveTmp_->doImport(rhs, *(*OvlpMapper_).Import_, Xpetra::CombineMode::INSERT);//, true
             for(auto globalRow : InterfaceMap_->getNodeElementList()){
                 LO localRow = OvlpMap_->getLocalElement(globalRow);
-                RhsPreSolveTmp_->replaceLocalValue(localRow, 0, ScalarTraits<SC>::zero());              
+                RhsPreSolveTmp_->replaceLocalValue(localRow, 0, ScalarTraits<SC>::zero());
             }
             OvlpMapper_->setLocalMap(*RhsPreSolveTmp_);
             OvlpMapper_->setLocalMap(*W_);
@@ -144,7 +149,11 @@ namespace FROSch {
             this->K_->apply(*Aw, *Aw);
             rhs.update(-1,*Aw,1);//rhs-A*w
 
-            output(W_, this->GlobalOverlappingGraph_->getRangeMap());
+            // output(W_, this->GlobalOverlappingGraph_->getRangeMap(),"w");
+            // auto cutVector = MultiVectorFactory<SC,LO,GO,NO>::Build(CutNodesMap_,1);
+            // cutVector->putScalar(1.0);
+            // output(cutVector, this->GlobalOverlappingGraph_->getRangeMap(),"cut");
+            // output(rhsRCP, rhsRCP->getMap(), "unique");
         }
     }
 

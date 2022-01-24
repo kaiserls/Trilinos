@@ -87,15 +87,15 @@ namespace FROSch {
             return 0;
         };
 
-        int initialize(int overlap,
+        virtual int initialize(int overlap,
                        ConstXMapPtr repeatedMap = null);
 
-        int compute();
+        virtual int compute();
 
-        void describe(FancyOStream &out,
+        virtual void describe(FancyOStream &out,
                       const EVerbosityLevel verbLevel=Describable::verbLevel_default) const;
 
-        string description() const;
+        virtual string description() const;
 
     protected:
 

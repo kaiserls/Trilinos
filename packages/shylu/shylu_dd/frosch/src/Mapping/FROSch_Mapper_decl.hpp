@@ -83,19 +83,19 @@ namespace FROSch {
         void setLocalMap(XMultiVector &globalVector);
         void setGlobalMap(XMultiVector &localVector);
 
-    //protected:
         enum CombinationType {Averaging,Full,Restricted};
-
+    
+    //protected: TODO: Make protected, when restrict and prolongate is used!
         ConstXMapPtr UniqueMap_; 
         ConstXMapPtr OverlappingMap_;
 
         ConstXMapPtr OverlappingMapLocal_;
 
         XImportPtr Import_;
-        XExportPtr Export_;
+        XExportPtr Export_;//TODO: usefull for rasho?
 
         CombinationType Combine_;
-        XMultiVectorPtr Multiplicity_;//Move to restricted subclass
+        XMultiVectorPtr Multiplicity_;//TODO: Move to averagesubclass
 
         mutable XMultiVectorPtr XOverlapTmp_;
     };

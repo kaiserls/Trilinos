@@ -87,7 +87,7 @@ namespace FROSch {
 
         virtual int initializeOverlappingOperator();
 
-        //int compute();
+        virtual int compute();
         virtual string description() const;
 
         virtual void preSolve(XMultiVector & rhs);
@@ -95,6 +95,7 @@ namespace FROSch {
 
     protected:
         bool HarmonicOnOverlap_ = false; //! Use harmonic decay of subdomain "solution" on overlap
+        bool rasho = true; //Use the rasho operator described in paper TODO: "2"
         //Harmonic
         //! Sarkis, Marcus. "Partition of unity coarse spaces and Schwarz methods with
         //! harmonic overlap." Recent Developments in Domain Decomposition Methods. Springer, Berlin, Heidelberg, 2002. 77-94.
