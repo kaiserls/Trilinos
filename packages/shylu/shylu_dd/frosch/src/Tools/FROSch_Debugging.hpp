@@ -56,7 +56,7 @@ inline void writeMeta(int nx, int ny, int processes){
 }
 
 template <class vector_type, class map_type>
-inline void output(const vector_type vec, const map_type globalUniqueMap ){
+inline void output(const vector_type vec, const map_type globalUniqueMap, string name=""){
     auto map = vec->getMap();
     int proc= map ->getComm()->getRank();
     // Write meta once
@@ -66,14 +66,14 @@ inline void output(const vector_type vec, const map_type globalUniqueMap ){
         writeMeta(n,n, procs);
     }
     ofstream myfile;
-    myfile.open ("nodes"+std::to_string(proc)+".txt");
-    for(auto node: map->getNodeElementList()){
+    myfile.open ("nodes_"+name+std::to_string(proc)+".txt");
+    for(unsigned node: map->getNodeElementList()){
         myfile<<node<<" ";
     }
     myfile.close();
-    myfile.open ("values"+std::to_string(proc)+".txt");
+    myfile.open ("values_"+name+std::to_string(proc)+".txt");
     auto values = vec->getData(0);
-    for (auto j=0; j<map->getNodeNumElements(); j++) {
+    for (unsigned j=0; j<map->getNodeNumElements(); j++) {
         myfile<<values[j]<<" ";
     }
     myfile.close();
