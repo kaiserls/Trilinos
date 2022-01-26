@@ -85,6 +85,7 @@ namespace FROSch {
         if(HarmonicOnOverlap_){
             setupHarmonicSolver();
         }
+        return 0;
     }
 
     template <class SC,class LO,class GO,class NO>
