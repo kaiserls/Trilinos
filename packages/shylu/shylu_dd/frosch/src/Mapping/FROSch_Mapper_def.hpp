@@ -51,13 +51,24 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+    //TODO: Think about how to make this work in both cases, maybe two classes? Simple and complex mapper?
     template <class SC,class LO,class GO,class NO>
-    Mapper<SC,LO,GO,NO>::Mapper(ConstXMapPtr uniqueMap, ConstXMapPtr overlappingMap,XMultiVectorPtr  multiplicity)
-    : UniqueMap_(uniqueMap), OverlappingMap_(overlappingMap), Multiplicity_(multiplicity) //inherit from describeable?
+    Mapper<SC,LO,GO,NO>::Mapper(ConstXMapPtr uniqueMap, ConstXMapPtr overlappingMap, XMultiVectorPtr  multiplicity, CombinationType combine)
+    : UniqueMap_(uniqueMap), OverlappingMap_(overlappingMap), Multiplicity_(multiplicity), Combine_(combine) //inherit from describeable?
     {
         RCP<const Comm<LO> > serialComm = rcp(new MpiComm<LO>(MPI_COMM_SELF));
         OverlappingMapLocal_ = Xpetra::MapFactory<LO,GO,NO>::Build(OverlappingMap_->lib(),OverlappingMap_->getNodeNumElements(),0,serialComm);
         Import_ = ImportFactory<LO,GO,NO>::Build(UniqueMap_,OverlappingMap_);
+    }
+
+    template <class SC,class LO,class GO,class NO>
+    Mapper<SC,LO,GO,NO>::Mapper(ConstXMapPtr uniqueMap, ConstXMapPtr overlappingMap, ConstXMapPtr importMap, ConstXMapPtr exportMap, XMultiVectorPtr multiplicity, CombinationType combine)
+    : UniqueMap_(uniqueMap), OverlappingMap_(overlappingMap), ImportMap_(importMap), ExportMap_(exportMap), Multiplicity_(multiplicity), Combine_(combine)
+    {
+        RCP<const Comm<LO> > serialComm = rcp(new MpiComm<LO>(MPI_COMM_SELF));
+        OverlappingMapLocal_ = Xpetra::MapFactory<LO,GO,NO>::Build(OverlappingMap_->lib(),OverlappingMap_->getNodeNumElements(),0,serialComm);
+        Import_ = ImportFactory<LO,GO,NO>::Build(UniqueMap_, ImportMap_);
+        Export_ = ExportFactory<LO,GO,NO>::Build(ExportMap_, UniqueMap_);
     }
 
     template <class SC,class LO,class GO,class NO>
@@ -100,6 +111,7 @@ namespace FROSch {
             if (target.is_null()) {
                 target = MultiVectorFactory<SC,LO,GO,NO>::Build(OverlappingMap_,source->getNumVectors());
             } else {
+                target->putScalar(ScalarTraits<SC>::zero());
                 target->replaceMap(OverlappingMap_);// to global communicator
             }
             target->doImport(*source,*Import_,INSERT);//unique source to overlapping target
@@ -150,7 +162,13 @@ namespace FROSch {
                 }
             }
         } else { // All modes, excluding restricted
-            target->doExport(*source,*Import_,ADD);
+            if(Export_.is_null()){//Export_ not calculated, use inverse of Import_
+                target->doExport(*source,*Import_,ADD);
+            }
+            else{
+                target->doExport(*source, *Export_, ADD);
+            }
+            
         }
         
         // Divide the result by the number of subdomains which contributed to this value

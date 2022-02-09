@@ -73,8 +73,8 @@ namespace FROSch {
             int res = calculateHarmonicMaps<SC,LO,GO,NO>(this->GlobalOverlappingGraph_, this->Multiplicity_, NonOvlpMap_, OvlpMap_, InterfaceMap_, CutNodesMap_);
 
             // Create importer between the (non)overlapping part and the extendend domain
-            OvlpMapper_ = rcp(new Mapper<SC,LO,GO,NO>(this->getDomainMap(),OvlpMap_, this->Multiplicity_));
-            NonOvlpMapper_ = rcp(new Mapper<SC,LO,GO,NO>(this->getDomainMap(),NonOvlpMap_, this->Multiplicity_));
+            OvlpMapper_ = rcp(new Mapper<SC,LO,GO,NO>(this->getDomainMap(), OvlpMap_, OvlpMap_, OvlpMap_, this->Multiplicity_, this->Combine_));
+            NonOvlpMapper_ = rcp(new Mapper<SC,LO,GO,NO>(this->getDomainMap(), this->OverlappingMap_, NonOvlpMap_, NonOvlpMap_, this->Multiplicity_, this->Combine_));
         }
         return 0;
     }
@@ -86,6 +86,43 @@ namespace FROSch {
             setupHarmonicSolver();
         }
         return 0;
+    }
+
+    //! Y = alpha * A^mode * X + beta * Y
+    template <class SC,class LO,class GO,class NO>
+    void HarmonicOverlappingOperator<SC,LO,GO,NO>::apply(const XMultiVector &x,
+                                                 XMultiVector &y,
+                                                 bool usePreconditionerOnly,
+                                                 ETransp mode,
+                                                 SC alpha,
+                                                 SC beta) const
+    {
+        FROSCH_TIMER_START_LEVELID(applyTime,"OverlappingOperator::apply");
+        FROSCH_ASSERT(this->IsComputed_,"FROSch::HarmonicOverlappingOperator: HarmonicOverlappingOperator has to be computed before calling apply()");
+        if (this->YOverlap_.is_null()) {
+            this->YOverlap_ = MultiVectorFactory<SC,LO,GO,NO>::Build(this->OverlappingMatrix_->getDomainMap(),x.getNumVectors());
+        } else {
+            this->YOverlap_->replaceMap(this->OverlappingMatrix_->getDomainMap());
+        }
+        if (this->XTmp_.is_null()) this->XTmp_ = MultiVectorFactory<SC,LO,GO,NO>::Build(x.getMap(),x.getNumVectors());
+
+        *(this->XTmp_) = x;
+        // Apply K first if the framework is not only used as preconditioner: P = M^-1 K
+        if (!usePreconditionerOnly && mode == NO_TRANS) { // If mode != NO_TRANS it is applied at the end
+            this->K_->apply(x,*(this->XTmp_),mode,ScalarTraits<SC>::one(),ScalarTraits<SC>::zero());
+        }
+        this->Mapper_->restrict(this->XTmp_, this->XOverlap_);
+        //NonOvlpMapper_->restrict(this->XTmp_, this->XOverlap_); //Restrict into the local overlapping subdomain vector
+        this->SubdomainSolver_->apply(*(this->XOverlap_),*(this->YOverlap_),mode,ScalarTraits<SC>::one(),ScalarTraits<SC>::zero());
+        std::cout<<"Solved local"<<std::endl;
+        this->YOverlap_->replaceMap(this->OverlappingMap_);
+        this->Mapper_->prolongate(this->YOverlap_, this->XTmp_);
+
+        if (!usePreconditionerOnly && mode != NO_TRANS) {
+            this->K_->apply(*(this->XTmp_),*(this->XTmp_),mode,ScalarTraits<SC>::one(),ScalarTraits<SC>::zero());
+        }
+        y.update(alpha,*(this->XTmp_),beta);
+        
     }
 
     template <class SC,class LO,class GO,class NO>

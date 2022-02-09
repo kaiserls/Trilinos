@@ -90,6 +90,13 @@ namespace FROSch {
         virtual int compute();
         virtual string description() const;
 
+        virtual void apply(const XMultiVector &x,
+                           XMultiVector &y,
+                           bool usePreconditionerOnly,
+                           ETransp mode=NO_TRANS,
+                           SC alpha=ScalarTraits<SC>::one(),
+                           SC beta=ScalarTraits<SC>::zero()) const;
+
         virtual void preSolve(XMultiVector & rhs);
         virtual void afterSolve(XMultiVector & lhs);
 
@@ -104,8 +111,8 @@ namespace FROSch {
         ConstXMapPtr InterfaceMap_; //Contains only the nodes of (all) interfaces
         ConstXMapPtr CutNodesMap_; //Contains the nodes on the interface but not in the own map
 
-        MapperPtr OvlpMapper_;
-        MapperPtr NonOvlpMapper_;
+        MapperPtr OvlpMapper_; //Mapper used for pre-/afterSolve
+        MapperPtr NonOvlpMapper_; //Mapper used for import in harmonic apply
 
         XMultiVectorPtr W_;
         mutable XMultiVectorPtr RhsPreSolveTmp_;

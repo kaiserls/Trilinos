@@ -73,7 +73,10 @@ namespace FROSch {
         using UN                    = unsigned;
 
     public:
-        Mapper(ConstXMapPtr uniqueMap, ConstXMapPtr overlappingMap, XMultiVectorPtr multiplicity);
+        enum CombinationType {Averaging,Full,Restricted};
+
+        Mapper(ConstXMapPtr uniqueMap, ConstXMapPtr overlappingMap, ConstXMapPtr importMap, ConstXMapPtr exportMap, XMultiVectorPtr multiplicity, CombinationType combine);
+        Mapper(ConstXMapPtr uniqueMap, ConstXMapPtr overlappingMap, XMultiVectorPtr multiplicity, CombinationType combine);
 
         ~Mapper();
 
@@ -82,20 +85,23 @@ namespace FROSch {
 
         void setLocalMap(XMultiVector &globalVector);
         void setGlobalMap(XMultiVector &localVector);
-
-        enum CombinationType {Averaging,Full,Restricted};
     
     //protected: TODO: Make protected, when restrict and prolongate is used!
+        // Maps of the source and target vectors
         ConstXMapPtr UniqueMap_; 
         ConstXMapPtr OverlappingMap_;
-
         ConstXMapPtr OverlappingMapLocal_;
 
+        // Subsets of the above maps used for import/export
+        ConstXMapPtr ImportMap_; //Map containing the nodes for which values should be imported
+        ConstXMapPtr ExportMap_; //Map containing the nodes for which values should be exported
+
+        // Precalculated imported/export operations
         XImportPtr Import_;
         XExportPtr Export_;//TODO: usefull for rasho?
 
-        CombinationType Combine_;
         XMultiVectorPtr Multiplicity_;//TODO: Move to averagesubclass
+        CombinationType Combine_;
 
         mutable XMultiVectorPtr XOverlapTmp_;
     };
