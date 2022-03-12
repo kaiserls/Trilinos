@@ -1,4 +1,4 @@
-# Python script to visualize node sets and vectors from the frosch framework
+# Python script to visualize xpetra maps and vectors, specialized to domain decomposition from the frosch framework
 
 from enum import Enum
 import os
@@ -11,26 +11,40 @@ from numpy.core.numeric import zeros_like
 from numpy.lib.function_base import meshgrid
 import meshio
 
-# Read files
+########################################################################### Read files written out by the c++ code
+# number of nodes nx,ny in the grid and number of processes used for the decomposition
 def read_meta():
     meta = np.loadtxt("meta.txt", dtype="int")
     nx, ny, processes = meta
     return nx, ny, processes
 
-def get_appendix(process, name, iteration):
+# recreate the appendix of the filenames:
+# - name (of the map/vector)
+# - number of the output process
+# - optional: iteration count
+def get_appendix(process, name, iteration=None):
     name = "_"+name if name!="" else ""
-    part = "_p" + str(process)+"_it"+"{:04d}".format(iteration)
+    part = "_p" + str(process)
+    if iteration is not None:
+        part = part + "_it"+"{:04d}".format(iteration)
     return name+part+".txt"
 
-def nodes_from_txt(process, name="", iteration=0):
+# Read a set of nodes (xpetra map on one process)
+def nodes_from_txt(process, name, iteration=None):
     appendix = get_appendix(process, name, iteration)
-    nodes =  np.loadtxt("nodes"+appendix, dtype='int')
+    fname = "nodes"+appendix
+    nodes =  np.loadtxt(fname, dtype='int')
+    return nodes
 
-def values_from_txt(process, name="", iteration=0):
+# Read a set of values
+def values_from_txt(process, name, iteration=None):
     appendix = get_appendix(process, name, iteration)
-    values = np.loadtxt("values"+appendix, dtype="double")
+    fname = "values"+appendix
+    values = np.loadtxt(fname, dtype="double")
+    return values
 
-def nodes_and_values_from_txt(process, name="", iteration=0):
+# Read a set of nodes and values (xpetra vector on one process)
+def nodes_and_values_from_txt(process, name="", iteration=None):
     try:
         appendix = get_appendix(process, name, iteration)
         nodes =  np.loadtxt("nodes"+appendix, dtype='int')
@@ -41,7 +55,7 @@ def nodes_and_values_from_txt(process, name="", iteration=0):
         return None, None
 
 
-# Grid functions
+########################################################################### Grid functions
 def generate_grid(nx,ny):
     x = np.linspace(0,1,nx)
     y = np.linspace(0,1,ny) 
@@ -75,9 +89,8 @@ def add_boundar_to_extended(GOs, values, nx, ny):
         values_with_boundary[go+nx+2+2*j+1]=values[go]
     return values_with_boundary
 
-#export
+########################################################################### export
 def append_to_data_set(data_set, processes, name, iteration, preprocessor=lambda nodes, values: values):
-
     values_extended_list = []
     for process in range(0, processes):
         nodes, values = nodes_and_values_from_txt(process,name, iteration)
@@ -86,6 +99,7 @@ def append_to_data_set(data_set, processes, name, iteration, preprocessor=lambda
         data_set[name+str(process)]= values_extended
     data_set[name]=np.sum(values_extended_list,axis=0)
 
+# Prolongates local vector to full domain, eventually adds boundary and optionally applies a custom function to the result
 def get_preprocessor(nx, ny, add_boundary, custom_func=None):
     if add_boundary:
             pre = lambda nodes, values : add_boundar_to_extended(nodes, prolongate(nodes, values, nx*ny), nx, ny)
@@ -98,7 +112,8 @@ def get_preprocessor(nx, ny, add_boundary, custom_func=None):
         preprocessor = lambda nodes, values: custom_func(pre(nodes, values))
     return preprocessor
 
-def export_vtk(field_names, add_boundary=True, iterations=1):
+# Reads the nodes and values for a list of field names, and up to the iteration count and saved them to a file named fname
+def export_vtk(fname, field_names, add_boundary=True, iterations=1):
     nx,ny,processes = read_meta()
     nb = 2 if add_boundary else 0
     mx=nx+nb
@@ -131,11 +146,9 @@ def export_vtk(field_names, add_boundary=True, iterations=1):
             cells,
             point_data=point_data,
         )
-        field_names_str = re.sub('[^A-Za-z0-9]+', '', str(field_names))
-        filename_out = field_names_str+"_"+"{:04d}".format(it)+".vtk"
-        mesh.write(filename_out)
+        mesh.write(fname+"_"+"{:04d}".format(it)+".vtk")
 
-def export_xdmf(field_names, add_boundary=True, iterations=1):
+def export_xdmf(fname, field_names, add_boundary=True, iterations=1):
     nx,ny,processes = read_meta()
     nb = 2 if add_boundary else 0
     mx=nx+nb
@@ -153,9 +166,7 @@ def export_xdmf(field_names, add_boundary=True, iterations=1):
             ],
         )
     ]
-    field_names_str = re.sub('[^A-Za-z0-9]+', '', str(field_names))
-    filename_out = field_names_str+".xdmf"
-    with meshio.xdmf.TimeSeriesWriter(filename_out) as writer:
+    with meshio.xdmf.TimeSeriesWriter(fname+".xdmf") as writer:
         writer.write_points_cells(points, cells)
         for it in range(0,iterations):
             point_data = {}
@@ -168,11 +179,13 @@ def export_xdmf(field_names, add_boundary=True, iterations=1):
         
             writer.write_data(it, point_data=point_data)
 
-# visualize
+########################################################################### Visualization with matplotlib
+# Visualizes a xpetra map by showing a scatter plot of the nodes
 def visualizeNodes(grid, GOs: np.array, offset=np.array([0,0]), s=None, c=None, marker=None,label=None, alpha=0.3):
     xx, yy = grid
     plt.scatter(xx[GOs]+offset[0],yy[GOs]+offset[1], s,c,marker, alpha=alpha, label=label)
 
+# Visualies the values of a xpetra vector by plotting the values next to the corresponding nodes of the map
 def visualizeValues(grid,GOs: np.array, values: np.array):
     xx, yy = grid
     i=0
@@ -180,45 +193,61 @@ def visualizeValues(grid,GOs: np.array, values: np.array):
         plt.text(x, y, f'{values[i]:.2}', color="red", fontsize=12)
         i=i+1
 
-def visualizeVector(name:str, size=None, color=None, marker:str=None, offset=None, process_list=None, alpha=None):
+# 
+def visualizeMap(name:str, size=None, color=None, marker:str=None, offset=None, process_list=None, alpha=None, showValues=False):
     nx, ny, processes = read_meta()
+    if process_list is None:
+        process_list = range(0,processes)
+    processes_plot = len(process_list)
+
+    # plot basic grid
     x,y,xx,yy = generate_grid(nx,ny)
     grid = (xx,yy)
     plt.scatter(xx,yy, s=1, color="black")
 
-    if process_list is None:
-        process_list = range(0,processes)
-    else:
-        processes=len(process_list)
-
+    # Set all visual parameters
     if color is None:
-        colors = ["r","g","b","y"]
+        if processes_plot<=4:
+            colors = ["r","g","b","y"]
+        else:
+            colors = ["tab:blue","tab:orange","tab:green","tab:red","tab:purple","tab:brown", "tab:pink","tab:gray","tab:olive"]
     else:
-        colors = [color]*processes
-    if size is None:
-        sizes = [15**2]*processes
-    else:
-        sizes = [size]*processes
-    #offsets=np.array([[0.,1./ny], [0.,-1./ny],[1./ny,0.],[-1./ny,0.]])
+        colors = [color]*processes_plot
     if offset is None:
-        offsets=np.array([[0.1/nx,0.1/ny], [-.1/nx,-.1/ny],[-.1/nx,.1/ny],[.1/nx,-.1/ny]])#TODO: for 9 processes?
+        if processes_plot<=4:
+            offsets=np.array([[0.1/nx,0.1/ny], [-.1/nx,-.1/ny],[-.1/nx,.1/ny],[.1/nx,-.1/ny]])
+        else:
+            offsets=np.array([[-0.05/nx,-0.05/ny],[0.,-0.05/ny],[0.05/nx,-0.05/ny],[-0.05/nx,0.0],[0.,0.],[0.05/nx,0.0],[-0.05/nx,0.05/ny],[0.,0.05/ny],[0.05/nx,0.05/ny]])
     else:
         offsets=np.array([offset]*processes)
-    if alpha is None:
-        alphas = [0.3]*processes
+    
+    if size is None:
+        sizes = [15**2]*processes_plot
     else:
-        alphas = [alpha]*processes
+        sizes = [size]*processes_plot
+    if alpha is None:
+        alphas = [0.3]*processes_plot
+    else:
+        alphas = [alpha]*processes_plot
+    
+    # Read in and plot
+    try:
+        for process in process_list:
+            if showValues:
+                nodes, values = nodes_and_values_from_txt(process,name)
+            else:
+                nodes = nodes_from_txt(process,name)
+            if nodes is not None:
+                visualizeNodes(grid, nodes, offsets[process], s=sizes[process], c=colors[process], marker=marker, alpha=alphas[process], label=name+f"-p{process}")
+                if showValues:
+                    visualizeValues(nodes, values)
+        legend = plt.legend(loc='upper right', fancybox=True, shadow=True)
+    except Exception as e:
+        print(e)
+        print(f"Didn't find files for name {name} {process}")
 
-    for process in process_list:
-        nodes, values = nodes_and_values_from_txt(process,name)
-        if nodes is not None:
-            visualizeNodes(grid, nodes, offsets[process], s=sizes[process], c=colors[process], marker=marker, alpha=alphas[process], label=name+f"-p{process}")
-            #visualizeValues(nodes, values)
-            #plt.title("process"+str(process))
-            #plt.title(name)
-            #plt.show(block=False)
-    legend = plt.legend(loc='upper right', fancybox=True, shadow=True)
 
+################################################################################## Main part
 def get_max_iterations():
     files = [f for f in os.listdir('.') if os.path.isfile(f) and f.endswith(".txt")]
     max = 0
@@ -231,20 +260,35 @@ def get_max_iterations():
             pass
     return max
 
+import sys
+
 if __name__=="__main__":
+    export = True
+    plot = True
+
+    appendix = ""
+    if len(sys.argv)>1:
+        appendix = "_"+sys.argv[1]
     max_iterations = get_max_iterations()
     print(max_iterations)
-    vecs = ["w","cut"]
-    markers=[None, "<"]
-    field_names = ["global","res"]#"res", "sol",
-    export_vtk(field_names, add_boundary=True, iterations=9)
-    export_xdmf(field_names, add_boundary=True, iterations=9)
-    plt.figure()
-    for i,name in enumerate(vecs):
-        visualizeVector(name, marker=markers[i],process_list=[0,1,2])
-        plt.show(block=False)
-    visualizeVector("unique", offset=[0,0], marker="x", size=5**2,process_list=[0,1,2], alpha=1.0)
-    plt.title("nodes")
-    #plt.show()
+    
+    if export:
+        field_names = ["rhs", "rhsHarmonic", "w", "res","sol","global","unique"]
+        field_names_str = re.sub('[^A-Za-z0-9]+', '', str(field_names))
+        fname = field_names_str+appendix
+        export_vtk(fname, field_names, add_boundary=True, iterations=max_iterations)
+        export_xdmf(fname, field_names, add_boundary=True, iterations=max_iterations)
+
+    if plot:
+        markers=[None, "<","o",""]
+        vecs = ["ovlp","nonOvlp", "interface"]
+        process_list=[i for i in range(0,4)]
+        plt.figure()
+        for i,name in enumerate(vecs):
+            visualizeMap(name, marker=markers[i],process_list=process_list)
+            plt.show(block=False)
+        visualizeMap("unique", offset=[0,0], marker="x", size=5**2,process_list=process_list, alpha=1.0) 
+        plt.title("nodes")
+        plt.show()
     
     
