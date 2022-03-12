@@ -73,7 +73,7 @@ namespace FROSch {
             int res = calculateHarmonicMaps<SC,LO,GO,NO>(this->GlobalOverlappingGraph_, this->Multiplicity_, NonOvlpMap_, OvlpMap_, InterfaceMap_, CutNodesMap_);
 
             // Create importer between the (non)overlapping part and the extendend domain
-            OvlpMapper_ = rcp(new Mapper<SC,LO,GO,NO>(this->getDomainMap(), OvlpMap_, OvlpMap_, OvlpMap_, this->Multiplicity_, this->Combine_));
+            OvlpMapper_ = rcp(new Mapper<SC,LO,GO,NO>(this->getDomainMap(), OvlpMap_, OvlpMap_, OvlpMap_, this->Multiplicity_, CombinationType::Restricted));
             NonOvlpMapper_ = rcp(new Mapper<SC,LO,GO,NO>(this->getDomainMap(), this->OverlappingMap_, NonOvlpMap_, NonOvlpMap_, this->Multiplicity_, this->Combine_));
         }
         return 0;
