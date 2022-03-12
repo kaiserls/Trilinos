@@ -227,7 +227,7 @@ namespace FROSch {
         if (Combine_ == CombinationType::Averaging) {
             calculateMultiplicity();
         }
-        Mapper_= rcp(new Mapper<SC,LO,GO,NO>(this->getDomainMap(),OverlappingMap_, Multiplicity_));
+        Mapper_= rcp(new Mapper<SC,LO,GO,NO>(this->getDomainMap(),OverlappingMap_, Multiplicity_, Combine_));
         return 0; // RETURN VALUE
     }
 
