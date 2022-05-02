@@ -78,7 +78,7 @@ namespace FROSch {
         Mapper(ConstXMapPtr uniqueMap, ConstXMapPtr overlappingMap, ConstXMapPtr importMap, ConstXMapPtr exportMap, XMultiVectorPtr multiplicity, CombinationType combine);
         Mapper(ConstXMapPtr uniqueMap, ConstXMapPtr overlappingMap, XMultiVectorPtr multiplicity, CombinationType combine);
 
-        ~Mapper();
+        virtual ~Mapper();
 
         virtual int restrict(const XMultiVectorPtr source, XMultiVectorPtr & target);
         virtual int prolongate(const XMultiVectorPtr source, XMultiVectorPtr & target);
