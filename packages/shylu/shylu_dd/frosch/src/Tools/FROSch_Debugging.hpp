@@ -47,7 +47,6 @@
 namespace FROSch{
     using namespace std;
 
-
 inline void writeMeta(int nx, int ny, int processes){
     ofstream myfile;
     myfile.open ("meta.txt");
@@ -55,24 +54,32 @@ inline void writeMeta(int nx, int ny, int processes){
     myfile.close();
 }
 
-template <class vector_type, class map_type>
-inline void output(const vector_type vec, const map_type globalUniqueMap, string name="", int it=0){
-    auto map = vec->getMap();
-    int proc= map ->getComm()->getRank();
+template <class map_type>
+inline void writeMeta(const map_type globalUniqueMap){
+    int proc =  globalUniqueMap->getComm()->getRank();
     // Write meta once
     if(proc == 0){
         int n = int(sqrt(globalUniqueMap->getGlobalNumElements()));//unique map
-        int procs = map ->getComm()->getSize();
+        int procs = globalUniqueMap ->getComm()->getSize();
         writeMeta(n,n, procs);
     }
+}
+
+template <class vector_type, class map_type>
+inline void outputWithOtherMap(const vector_type vec, const map_type otherMap, string name="", int it=-1){
+    auto map = otherMap;
+    int proc = map->getComm()->getRank();
 
     size_t n = 4;
     std::ostringstream ss;
-    ss << std::setw(n) << std::setfill('0') << to_string(it);
+    if(it!=-1){
+        ss<<"_it";
+        ss << std::setw(n) << std::setfill('0') << to_string(it);
+    }
     std::string s = ss.str();
 
     ofstream myfile;
-    string appendix = "_"+name + "_p" + to_string(proc)+"_it"+s+".txt";
+    string appendix = "_"+name + "_p" + to_string(proc)+s+".txt";
     myfile.open("nodes"+appendix);
     for(unsigned node: map->getNodeElementList()){
         myfile<<node<<" ";
@@ -82,6 +89,25 @@ inline void output(const vector_type vec, const map_type globalUniqueMap, string
     auto values = vec->getData(0);
     for (unsigned j=0; j<map->getNodeNumElements(); j++) {
         myfile<<values[j]<<" ";
+    }
+    myfile.close();
+}
+
+template <class vector_type>
+inline void output(const vector_type vec, string name="", int it=-1){
+    auto map = vec->getMap();
+    outputWithOtherMap(vec, map, name, it);
+}
+
+template <class map_type>
+inline void output_map(const map_type map, string name=""){
+    int proc = map->getComm()->getRank();
+    
+    ofstream myfile;
+    string appendix = "_"+name + "_p" + to_string(proc)+".txt";
+    myfile.open("nodes"+appendix);
+    for(unsigned node: map->getNodeElementList()){
+        myfile<<node<<" ";
     }
     myfile.close();
 }

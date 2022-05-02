@@ -11,6 +11,8 @@ from numpy.core.numeric import zeros_like
 from numpy.lib.function_base import meshgrid
 import meshio
 
+from tikzplotlib import save as tikz_save
+
 ########################################################################### Read files written out by the c++ code
 # number of nodes nx,ny in the grid and number of processes used for the decomposition
 def read_meta():
@@ -186,15 +188,18 @@ def visualizeNodes(grid, GOs: np.array, offset=np.array([0,0]), s=None, c=None, 
     plt.scatter(xx[GOs]+offset[0],yy[GOs]+offset[1], s,c,marker, alpha=alpha, label=label)
 
 # Visualies the values of a xpetra vector by plotting the values next to the corresponding nodes of the map
-def visualizeValues(grid,GOs: np.array, values: np.array):
+def visualizeValues(grid,GOs: np.array, values: np.array, color="black"):
+    # sanitize
+    eps = 1e-8
+    values_zeroed = np.where(np.abs(values)<eps, 0, values)
     xx, yy = grid
     i=0
     for x, y in zip(xx[GOs], yy[GOs]): 
-        plt.text(x, y, f'{values[i]:.2}', color="red", fontsize=12)
+        plt.text(x, y, f'{values_zeroed[i]:.2}', color=color, fontsize=10)
         i=i+1
 
 # 
-def visualizeMap(name:str, size=None, color=None, marker:str=None, offset=None, process_list=None, alpha=None, showValues=False):
+def visualizeMap(name:str, size=None, color=None, marker:str=None, offset=None, process_list=None, alpha=None, showValues=False, it=None):
     nx, ny, processes = read_meta()
     if process_list is None:
         process_list = range(0,processes)
@@ -234,13 +239,13 @@ def visualizeMap(name:str, size=None, color=None, marker:str=None, offset=None, 
     try:
         for process in process_list:
             if showValues:
-                nodes, values = nodes_and_values_from_txt(process,name)
+                nodes, values = nodes_and_values_from_txt(process,name, iteration=it)
             else:
-                nodes = nodes_from_txt(process,name)
+                nodes = nodes_from_txt(process,name, iteration=it)
             if nodes is not None:
                 visualizeNodes(grid, nodes, offsets[process], s=sizes[process], c=colors[process], marker=marker, alpha=alphas[process], label=name+f"-p{process}")
                 if showValues:
-                    visualizeValues(nodes, values)
+                    visualizeValues(grid, nodes, values, color=colors[process])
         legend = plt.legend(loc='upper right', fancybox=True, shadow=True)
     except Exception as e:
         print(e)
@@ -266,6 +271,8 @@ if __name__=="__main__":
     export = True
     plot = True
 
+    nx, ny, processes = read_meta()
+
     appendix = ""
     if len(sys.argv)>1:
         appendix = "_"+sys.argv[1]
@@ -273,22 +280,25 @@ if __name__=="__main__":
     print(max_iterations)
     
     if export:
-        field_names = ["rhs", "rhsHarmonic", "w", "res","sol","global","unique"]
+        field_names = ["rhs", "rhsHarmonic", "w", "res","sol","global","unique", "XOverlap_", "XOverlap_New","XTmp_","LocalSol"]
         field_names_str = re.sub('[^A-Za-z0-9]+', '', str(field_names))
-        fname = field_names_str+appendix
+        fname = "out_"+appendix
         export_vtk(fname, field_names, add_boundary=True, iterations=max_iterations)
         export_xdmf(fname, field_names, add_boundary=True, iterations=max_iterations)
 
     if plot:
-        markers=[None, "<","o",""]
-        vecs = ["ovlp","nonOvlp", "interface"]
-        process_list=[i for i in range(0,4)]
+        markers=[None, "<","s",""]
+        #vecs = ["ovlp","nonOvlp", "interface"]
+        vecs=["overlapping", "interface","cut"]
+        #vecs=["interface","cut"]
+        process_list=[0,1,2,3,4]#i for i in range(0,processes)]
         plt.figure()
         for i,name in enumerate(vecs):
             visualizeMap(name, marker=markers[i],process_list=process_list)
             plt.show(block=False)
-        visualizeMap("unique", offset=[0,0], marker="x", size=5**2,process_list=process_list, alpha=1.0) 
+        visualizeMap("unique", offset=[0,0], marker="x", size=5**2,process_list=process_list, alpha=1.0)
+        #visualizeMap("res", offset=[0,0], color="black", marker="x", size=5**2,process_list=process_list, alpha=1.0, showValues=True, it=0)
+        #visualizeMap("XTmp_", offset=[0,0], color="black", marker="x", size=5**2,process_list=process_list, alpha=1.0, showValues=True, it=0) 
         plt.title("nodes")
+        tikz_save('NodeSets.tex')
         plt.show()
-    
-    
