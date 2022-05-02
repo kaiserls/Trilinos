@@ -78,33 +78,7 @@ namespace FROSch {
     {
         FROSCH_TIMER_START_LEVELID(applyTime,"OverlappingOperator::restrict");
         FROSCH_ASSERT(this->IsInitialized_,"FROSch::OverlappingOperator: OverlappingOperator has to be initialized before calling apply()");
-
-        if (source->getMap()->lib() == UseEpetra) { // AH 11/28/2018: For Epetra, XOverlap_ will only have a view to the values of XOverlapTmp_. Therefore, xOverlapTmp should not be deleted before XOverlap_ is used.
-#ifdef HAVE_XPETRA_EPETRA
-            if (XOverlapTmp_.is_null()) XOverlapTmp_ = MultiVectorFactory<SC,LO,GO,NO>::Build(OverlappingMap_,source->getNumVectors());
-            XOverlapTmp_->doImport(*source,*Scatter_,INSERT);
-            const RCP<const EpetraMultiVectorT<GO,NO> > xEpetraMultiVectorXOverlapTmp = rcp_dynamic_cast<const EpetraMultiVectorT<GO,NO> >(XOverlapTmp_);
-            RCP<Epetra_MultiVector> epetraMultiVectorXOverlapTmp = xEpetraMultiVectorXOverlapTmp->getEpetra_MultiVector();
-            const RCP<const EpetraMapT<GO,NO> >& xEpetraMap = rcp_dynamic_cast<const EpetraMapT<GO,NO> >(OverlappingMatrix_->getRangeMap());
-            Epetra_BlockMap epetraMap = xEpetraMap->getEpetra_BlockMap();
-            double *A;
-            int MyLDA;
-            epetraMultiVectorXOverlapTmp->ExtractView(&A,&MyLDA);
-            RCP<Epetra_MultiVector> epetraMultiVectorXOverlap(new Epetra_MultiVector(::View,epetraMap,A,MyLDA,source->getNumVectors()));
-            target = RCP<EpetraMultiVectorT<GO,NO> >(new EpetraMultiVectorT<GO,NO>(epetraMultiVectorXOverlap));
-#else
-            FROSCH_ASSERT(false,"HAVE_XPETRA_EPETRA not defined.");
-#endif
-        } else {
-            // Do Import into overlapping local vector
-            if (target.is_null()) {
-                target = MultiVectorFactory<SC,LO,GO,NO>::Build(OverlappingMap_,source->getNumVectors());
-            } else {
-                target->replaceMap(OverlappingMap_);// to global communicator
-            }
-            target->doImport(*source,*Scatter_,INSERT);//unique source to overlapping target
-            target->replaceMap(OverlappingMatrix_->getRangeMap());//global to local communicator, to prevent subdomain solvers communication
-        }
+        Mapper_->restrict(source, target);
     }
 
     //TODO: for harmonic (but not pre/aftersolve)
@@ -117,58 +91,7 @@ namespace FROSch {
     {
         FROSCH_TIMER_START_LEVELID(applyTime,"OverlappingOperator::prolongate");
         FROSCH_ASSERT(this->IsInitialized_,"FROSch::OverlappingOperator: OverlappingOperator has to be initialized before calling prolongate()");
-        target->putScalar(ScalarTraits<SC>::zero());
-        
-        if (Combine_ == CombinationType::Restricted) {
-            ConstXMapPtr overlapMap = source->getMap();
-#if defined(HAVE_XPETRA_KOKKOS_REFACTOR) && defined(HAVE_XPETRA_TPETRA)
-            if (target->getMap()->lib() == UseTpetra) {
-                auto localMap = uniqueMap->getLocalMap();
-                auto localOverlapMap = overlapMap->getLocalMap();
-                // run local restriction on execution space defined by local-map
-                using XMap            = typename SchwarzOperator<SC,LO,GO,NO>::XMap;
-                using execution_space = typename XMap::local_map_type::execution_space;
-                Kokkos::RangePolicy<execution_space> policy (0, uniqueMap->getNodeNumElements());
-                for (UN i=0; i<target->getNumVectors(); i++) {
-                    auto sourceData_i = source->getData(i);
-                    auto targetLocalData_i = target->getDataNonConst(i);
-                    Kokkos::parallel_for(
-                      "FROSch_OverlappingOperator::applyLocalRestriction", policy,
-                      KOKKOS_LAMBDA(const int j) {
-                        GO gID = localMap.getGlobalElement(j);
-                        LO lID = localOverlapMap.getLocalElement(gID);
-                        targetLocalData_i[j] = sourceData_i[lID];
-                      });
-                }
-                Kokkos::fence();
-            } else
-#endif
-            {
-                GO globID = 0;
-                LO localID = 0;
-                for (UN i=0; i<target->getNumVectors(); i++) {
-                    ConstSCVecPtr overlapData_i = source->getData(i);
-                    for (UN j=0; j<uniqueMap->getNodeNumElements(); j++) {
-                        globID = uniqueMap->getGlobalElement(j);
-                        localID = overlapMap->getLocalElement(globID);
-                        target->getDataNonConst(i)[j] = overlapData_i[localID];
-                    }
-                }
-            }
-        } else { // All modes, excluding restricted
-            target->doExport(*source,*Scatter_,ADD);
-        }
-        
-        // Divide the result by the number of subdomains which contributed to this value
-        if (Combine_ == CombinationType::Averaging) {
-            ConstSCVecPtr scaling = Multiplicity_->getData(0);
-            for (UN j=0; j<target->getNumVectors(); j++) {
-                SCVecPtr values = target->getDataNonConst(j);
-                for (UN i=0; i<values.size(); i++) {
-                    values[i] = values[i] / scaling[i];
-                }
-            }
-        }
+        Mapper_->prolongate(source, target);
     }
 
     //! Y = alpha * A^mode * X + beta * Y
