@@ -101,8 +101,10 @@ namespace FROSch {
         virtual void afterSolve(XMultiVector & lhs);
 
     protected:
+        // virtual int updateLocalOverlappingMatrices();
+
         bool HarmonicOnOverlap_ = false; //! Use harmonic decay of subdomain "solution" on overlap
-        bool rasho = true; //Use the rasho operator described in paper TODO: "2"
+        bool rasho = false; //Use the rasho operator described in paper TODO: "2"
         //Harmonic
         //! Sarkis, Marcus. "Partition of unity coarse spaces and Schwarz methods with
         //! harmonic overlap." Recent Developments in Domain Decomposition Methods. Springer, Berlin, Heidelberg, 2002. 77-94.
@@ -110,17 +112,21 @@ namespace FROSch {
         ConstXMapPtr NonOvlpMap_; //Contains only the nodes which are not overlapping
         ConstXMapPtr InterfaceMap_; //Contains only the nodes of (all) interfaces
         ConstXMapPtr CutNodesMap_; //Contains the nodes on the interface but not in the own map
+        ConstXMapPtr MatrixImportMap_; //Contains the nodes where the local matrix should be imported
 
         MapperPtr OvlpMapper_; //Mapper used for pre-/afterSolve
         MapperPtr NonOvlpMapper_; //Mapper used for import in harmonic apply
+        //TODO: Remove intermediate step for performance reasons?
+        MapperPtr UniqueToNonOvlpMapper_;
+        MapperPtr NonOvlpToOvlpMapper_;
+        mutable XMultiVectorPtr IntermedNonOvlp_;
 
         XMultiVectorPtr W_;
         mutable XMultiVectorPtr RhsPreSolveTmp_;
         SolverPtr HarmonicSolver_; //TODO: Maybe delete after preSolve to save memory
     
     private:
-        virtual int setupHarmonicSolver();
-    
+        virtual int setupHarmonicSolver();    
     };
 
 }

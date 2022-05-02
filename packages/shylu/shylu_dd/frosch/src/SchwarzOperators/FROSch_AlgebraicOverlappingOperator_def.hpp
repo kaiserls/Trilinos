@@ -303,7 +303,20 @@ namespace FROSch {
                     break;
             }
         }
-        this->GlobalOverlappingGraph_ = this->OverlappingMatrix_->getCrsGraph();
+
+        switch (AddingLayersStrategy_) {
+            case LayersFromGraph://default
+                this->GlobalOverlappingGraph_ = overlappingGraph;
+                break;
+            default:
+                this->GlobalOverlappingGraph_ = this->OverlappingMatrix_->getCrsGraph();
+                break;
+        }
+        //TODO: Remove debugging code
+        //should be the same
+        // RCP<FancyOStream> wrappedCout = getFancyOStream (rcpFromRef (std::cout)); // Wrap std::cout in a FancyOStream.
+        // this->OverlappingMap_->describe(*wrappedCout, Teuchos::VERB_EXTREME);
+        // this->GlobalOverlappingGraph_->getColMap()->describe(*wrappedCout, Teuchos::VERB_EXTREME);
         return 0;
     }
 }
