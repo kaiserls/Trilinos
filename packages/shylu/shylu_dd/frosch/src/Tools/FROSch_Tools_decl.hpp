@@ -271,11 +271,11 @@ namespace FROSch {
     template <class LO,class GO,class NO>
     Teuchos::RCP<Xpetra::Vector<int, LO,GO,NO>> getGlobalInterfaceNodesRanksBinaryEncoded(RCP<const CrsGraph<LO,GO,NO> > graph);
 
-    template <class SC, class LO,class GO,class NO> inline
-    RCP<Map<LO,GO,NO>> getNonoverlappingNodesMap(RCP<const CrsGraph<LO,GO,NO> > graph, RCP<MultiVector<SC,LO,GO,NO>> multiplicity);
+    // template <class SC, class LO,class GO,class NO> inline
+    // RCP<Map<LO,GO,NO>> getNonoverlappingNodesMap(RCP<const CrsGraph<LO,GO,NO> > graph, RCP<MultiVector<SC,LO,GO,NO>> multiplicity);
 
-    template <class SC, class LO,class GO,class NO> inline
-    RCP<Map<LO,GO,NO>> getOverlappingNodesCuttedMap(RCP<const CrsGraph<LO,GO,NO> > graph, RCP<MultiVector<SC,LO,GO,NO>> multiplicity);
+    // template <class SC, class LO,class GO,class NO> inline
+    // RCP<Map<LO,GO,NO>> getOverlappingNodesCuttedMap(RCP<const CrsGraph<LO,GO,NO> > graph, RCP<MultiVector<SC,LO,GO,NO>> multiplicity);
 
     /*! \brief Sort the Xpetra::Map by the global IDs \c x
      * \param[in] inputMap Unsorted input map
