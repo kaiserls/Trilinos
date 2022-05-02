@@ -145,10 +145,19 @@ int main(int argc, char *argv[])
 
     int N = 0;
     int color=1;
+    int mx=0;
+    int my=0;
     if (Dimension == 2) {
         N = (int) (pow(CommWorld->getSize(),1/2.) + 100*numeric_limits<double>::epsilon()); // 1/H
         if (CommWorld->getRank()<N*N) {
             color=0;
+            mx=N;
+            my=N;
+        }
+        if(CommWorld->getSize()==2){
+            color=0;
+            mx=2;
+            my=1;
         }
     } else if (Dimension == 3) {
         N = (int) (pow(CommWorld->getSize(),1/3.) + 100*numeric_limits<double>::epsilon()); // 1/H
@@ -186,8 +195,8 @@ int main(int argc, char *argv[])
             GaleriList.set("nx", GO(N*(M+block)));
             GaleriList.set("ny", GO(N*(M+block)));
             GaleriList.set("nz", GO(N*(M+block)));
-            GaleriList.set("mx", GO(N));
-            GaleriList.set("my", GO(N));
+            GaleriList.set("mx", GO(mx));
+            GaleriList.set("my", GO(my));
             GaleriList.set("mz", GO(N));
 
             RCP<const Map<LO,GO,NO> > UniqueMapTmp;
