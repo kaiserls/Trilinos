@@ -59,6 +59,10 @@
 #  include <TpetraExt_MatrixMatrix.hpp>
 #endif
 
+#include "Teuchos_StandardParameterEntryValidators.hpp"
+#include "Thyra_BelosLinearOpWithSolveFactory_decl.hpp"
+#include "BelosPseudoBlockCGSolMgr.hpp"
+
 namespace {
   // Set the Belos solver's parameter list to scale its residual norms
   // in the specified way.
@@ -698,6 +702,15 @@ BelosLinearOpWithSolve<Scalar>::solveImpl(
       TEUCHOS_TEST_FOR_EXCEPTION( true,
                                   CatastrophicSolveFailure,
                                   ex.what() );
+    }
+    //Output condition number
+    auto solverType_ = EBelosSolverType::SOLVER_TYPE_PSEUDO_BLOCK_CG;//Teuchos::getIntegralValue<EBelosSolverType>(*solverPL_, "Solver Type");
+    if(solverType_ == EBelosSolverType::SOLVER_TYPE_PSEUDO_BLOCK_CG){
+      RCP<Belos::PseudoBlockCGSolMgr<Scalar,MV_t,LO_t> > blockcg = Teuchos::rcp_dynamic_cast<Belos::PseudoBlockCGSolMgr<Scalar,MV_t,LO_t> >(iterativeSolver_);
+      if(!blockcg.is_null()){
+        Scalar cond = blockcg->getConditionEstimate();
+        *out<<"\n Estimated condition number thyra: "<<cond<<" \n \n";
+      }
     }
   }
 
