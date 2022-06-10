@@ -991,7 +991,7 @@ namespace FROSch {
 
         //Bring the needed interface nodes onto this process
         auto interfaceNodes = getGlobalInterfaceNodesRanksBinaryEncoded<LO,GO,NO>(graph);
-        #TODO: Remove debugging
+        //TODO: Remove debugging
         #ifndef NDEBUG
         output(interfaceNodes, "interfaceEncoded");
         #endif
