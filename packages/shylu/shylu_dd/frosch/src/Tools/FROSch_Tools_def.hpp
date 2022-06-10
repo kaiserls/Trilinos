@@ -991,7 +991,10 @@ namespace FROSch {
 
         //Bring the needed interface nodes onto this process
         auto interfaceNodes = getGlobalInterfaceNodesRanksBinaryEncoded<LO,GO,NO>(graph);
+        #TODO: Remove debugging
+        #ifndef NDEBUG
         output(interfaceNodes, "interfaceEncoded");
+        #endif
         // Communicate over unique map to same map again (or mpi call) to ensure that values are exchanged
         auto interfaceNodesUnique = VectorFactory<int,LO,GO,NO>::Build(uniqueMap);
         interfaceNodesUnique->doExport(*interfaceNodes, *colImporter, Xpetra::CombineMode::ADD);
