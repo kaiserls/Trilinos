@@ -88,6 +88,7 @@ namespace FROSch {
             NonOvlpToOvlpMapper_ = rcp(new Mapper<SC,LO,GO,NO>(NonOvlpMap_, this->OverlappingMap_, this->OverlappingMap_, this->OverlappingMap_, this->Multiplicity_, this->Combine_));
 
             // TODO: Remove debugging
+            #ifndef NDEBUG
             writeMeta(this->GlobalOverlappingGraph_->getRangeMap());
             
             output_map(this->GlobalOverlappingGraph_->getRangeMap(),"unique");
@@ -96,6 +97,7 @@ namespace FROSch {
             output_map(NonOvlpMap_,"nonOvlp");
             output_map(InterfaceMap_,  "interface");
             output_map(CutNodesMap_,  "cut");
+            #endif
 
             RCP<FancyOStream> wrappedCout = getFancyOStream (rcpFromRef (std::cout)); // Wrap std::cout in a FancyOStream.
             // OvlpMap_->describe(*wrappedCout, Teuchos::VERB_EXTREME);
@@ -170,13 +172,18 @@ namespace FROSch {
             UniqueToNonOvlpMapper_->restrict(this->XTmp_, IntermedNonOvlp_);
             // nonoverlapp -> overlap
             NonOvlpToOvlpMapper_->restrict(IntermedNonOvlp_,this->XOverlap_);
+            //TODO: Remove debugging
+            #ifndef NDEBUG
             outputWithOtherMap(this->XOverlap_, this->OverlappingMap_, "XOverlap_New", iteration);
+            #endif
             // Oder sogar mit forschleife selbstgeschrieben
         } else{
             this->Mapper_->restrict(this->XTmp_, this->XOverlap_); //Restrict into the local overlapping subdomain vector
         }
+        #ifndef NDEBUG
         //output fix, because XOverlap is local aver restrict and was never intended for output/export
         outputWithOtherMap(this->XOverlap_, this->OverlappingMap_, "XOverlap_", iteration);
+        #endif
         this->SubdomainSolver_->apply(*(this->XOverlap_),*(this->YOverlap_),mode,ScalarTraits<SC>::one(),ScalarTraits<SC>::zero());
         this->YOverlap_->replaceMap(this->OverlappingMap_);
         this->Mapper_->prolongate(this->YOverlap_, this->XTmp_);
@@ -185,13 +192,14 @@ namespace FROSch {
             this->K_->apply(*(this->XTmp_),*(this->XTmp_),mode,ScalarTraits<SC>::one(),ScalarTraits<SC>::zero());
         }
         y.update(alpha,*(this->XTmp_),beta);
-        
+        #ifndef NDEBUG
         auto rcp_x = RCP<const XMultiVector>(&x, false);
         auto rcp_y = RCP<const XMultiVector>(&y, false);
         output(this->XTmp_, "XTmp_", iteration);
         output(this->YOverlap_, "LocalSol", iteration);
         output(rcp_x, "res", iteration);
         output(rcp_y, "sol", iteration);
+        #endif
         iteration++;
     }
 
@@ -253,10 +261,12 @@ namespace FROSch {
             RCP<XMultiVector> rhsRCP = RCP<XMultiVector>(&rhs, false);
             auto Aw = MultiVectorFactory<SC,LO,GO,NO>::Build(rhs.getMap(),1);
             //TODO: Debugging
+            #ifndef NDEBUG
             auto rank = rhs.getMap()->getComm()->getRank();
             if(rank==0){
                 std::cout<<"ovlpmapper import"<<std::endl;
             }
+            #endif
             // Import rhs and set dirichlet entries to zero
             RhsPreSolveTmp_->doImport(rhs, *(*OvlpMapper_).Import_, Xpetra::CombineMode::INSERT);//, true
             // for(auto globalRow : InterfaceMap_->getNodeElementList()){
@@ -271,10 +281,14 @@ namespace FROSch {
             // Bring solution to the full domain:
             Aw->doExport(*W_, *(*OvlpMapper_).Import_, Xpetra::CombineMode::INSERT);//, true, REPLACE?!
             this->K_->apply(*Aw, *Aw);
+            #ifndef NDEBUG
             output(rhsRCP,  "rhs",0);
+            #endif
             rhs.update(-1,*Aw,1);//rhs-A*w
+            #ifndef NDEBUG
             output(rhsRCP, "rhsHarmonic",0);
             output(W_, "w",0);
+            #endif
         }
     }
 
