@@ -269,7 +269,7 @@ namespace FROSch {
     Teuchos::Array<GO> getLocalInterfaceNodes(RCP<const CrsGraph<LO,GO,NO> > graph);
 
     template <class LO,class GO,class NO>
-    Teuchos::RCP<Xpetra::Vector<int, LO,GO,NO>> getGlobalInterfaceNodesRanksBinaryEncoded(RCP<const CrsGraph<LO,GO,NO> > graph);
+    Teuchos::RCP<Xpetra::Vector<int, LO,GO,NO>> getGlobalInterfaceNodes(RCP<const CrsGraph<LO,GO,NO> > graph);
 
     // template <class SC, class LO,class GO,class NO> inline
     // RCP<Map<LO,GO,NO>> getNonoverlappingNodesMap(RCP<const CrsGraph<LO,GO,NO> > graph, RCP<MultiVector<SC,LO,GO,NO>> multiplicity);

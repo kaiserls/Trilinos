@@ -990,7 +990,7 @@ namespace FROSch {
         multiplicityExtended->doImport(*multiplicity, *colImporter, Xpetra::CombineMode::INSERT);//TODO: REPLACE not available?	
 
         //Bring the needed interface nodes onto this process
-        auto interfaceNodes = getGlobalInterfaceNodesRanksBinaryEncoded<LO,GO,NO>(graph);
+        auto interfaceNodes = getGlobalInterfaceNodes<LO,GO,NO>(graph);
         //TODO: Remove debugging
         #ifndef NDEBUG
         output(interfaceNodes, "interfaceEncoded");
@@ -1160,9 +1160,9 @@ namespace FROSch {
     }
 
     template <class LO,class GO,class NO>
-    Teuchos::RCP<Xpetra::Vector<int, LO,GO,NO>> getGlobalInterfaceNodesRanksBinaryEncoded(RCP<const CrsGraph<LO,GO,NO> > graph)
+    Teuchos::RCP<Xpetra::Vector<int, LO,GO,NO>> getGlobalInterfaceNodes(RCP<const CrsGraph<LO,GO,NO> > graph)
     {
-        FROSCH_DETAILTIMER_START(getGlobalInterfaceNodesRanksBinaryEncoded,"getGlobalInterfaceNodesRanksBinaryEncoded");
+        FROSCH_DETAILTIMER_START(getGlobalInterfaceNodes,"getGlobalInterfaceNodes");
         
         auto interfaceNodesArray = getLocalInterfaceNodes(graph);
 
@@ -1172,7 +1172,7 @@ namespace FROSch {
         
         int rank = graph->getComm()->getRank();
         for(auto & globalIndex: interfaceNodesArray){
-            interfaceNodes->sumIntoGlobalValue(globalIndex, pow(2,rank));
+            interfaceNodes->sumIntoGlobalValue(globalIndex, 1);
         }
         return interfaceNodes;
     }
