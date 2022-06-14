@@ -376,6 +376,8 @@ int main(int argc, char *argv[])
             cout << endl;
         }
 
+        double start = MPI_Wtime();
+
         Comm->barrier(); if (Comm->getRank()==0) cout << "###################################\n# Stratimikos LinearSolverBuilder #\n###################################\n" << endl;
         Stratimikos::DefaultLinearSolverBuilder linearSolverBuilder;
         Stratimikos::enableFROSch<LO,GO,NO>(linearSolverBuilder);
@@ -427,6 +429,9 @@ int main(int argc, char *argv[])
         Comm->barrier(); if (Comm->getRank()==0) cout << "the error is: - for the Modified system: "<<residualModifiedSystem << " - for the original system: "<< residualOriginalSystem <<std::endl;
         //FROSCH_ASSERT(res)
         Comm->barrier(); if (Comm->getRank()==0) cout << "\n#############\n# Finished! #\n#############" << endl;
+
+        double end = MPI_Wtime();
+        if (Comm->getRank()==0) cout << "Solving the system took " << end - start << " seconds to run." << endl;
     }
     
 
