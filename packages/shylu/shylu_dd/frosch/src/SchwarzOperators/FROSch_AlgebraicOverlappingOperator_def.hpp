@@ -44,6 +44,8 @@
 
 #include <FROSch_AlgebraicOverlappingOperator_decl.hpp>
 
+#include <FROSch_Debugging.hpp>
+
 
 namespace FROSch {
 
@@ -317,6 +319,10 @@ namespace FROSch {
         // RCP<FancyOStream> wrappedCout = getFancyOStream (rcpFromRef (std::cout)); // Wrap std::cout in a FancyOStream.
         // this->OverlappingMap_->describe(*wrappedCout, Teuchos::VERB_EXTREME);
         // this->GlobalOverlappingGraph_->getColMap()->describe(*wrappedCout, Teuchos::VERB_EXTREME);
+        #ifndef NDEBUG
+        output_map(repeatedMap, "repeated");
+        #endif
+        
         return 0;
     }
 }
