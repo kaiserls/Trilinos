@@ -207,9 +207,9 @@ namespace FROSch {
     int HarmonicOverlappingOperator<SC,LO,GO,NO>::setupHarmonicSolver(){
         FROSCH_DETAILTIMER_START_LEVELID(setupHarmonicSolver,"OverlappingOperator::setupHarmonicSolver");
         RCP<FancyOStream> wrappedCout = getFancyOStream (rcpFromRef (std::cout)); // Wrap std::cout in a FancyOStream.
-        std::cout<<"           setup harmonic solver"<<std::endl;
+        //std::cout<<"           setup harmonic solver"<<std::endl;
         RCP<Matrix<SC,LO,GO,NO>> ovlpMatrix = ExtractLocalSubdomainMatrixNonConst<SC,LO,GO,NO>(this->K_, OvlpMap_);
-        std::cout<<"extract local subdomain map finished"<<std::endl;
+        //std::cout<<"extract local subdomain map finished"<<std::endl;
         
         
         //ovlpMatrix->getRowMap()->describe(*wrappedCout, Teuchos::VERB_EXTREME);
@@ -234,10 +234,10 @@ namespace FROSch {
         //     //TODO: vergleiche ovlpmap_ und maps der matrix
         //     ovlpMatrix->replaceLocalValues(localRow, localColumns(0,nEntries), values(0,nEntries));
         // }
-        std::cout<<"              one mroe step: fill complete"<<std::endl;
+        //std::cout<<"              one mroe step: fill complete"<<std::endl;
 
         ovlpMatrix->fillComplete();
-        std::cout<<"               step completed"<<std::endl;
+        //std::cout<<"               step completed"<<std::endl;
         HarmonicSolver_ = SolverFactory<SC,LO,GO,NO>::Build(ovlpMatrix,
                                                              sublist(this->ParameterList_,"Solver"),
                                                              string("Solver (Level ") + to_string(this->LevelID_) + string(")"));
