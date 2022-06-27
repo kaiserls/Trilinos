@@ -974,7 +974,7 @@ namespace FROSch {
                               RCP<const Map<LO,GO,NO> > &cutMap,
                               RCP<const Map<LO,GO,NO> > &matrixImportMap,
                               bool restricted){
-        FROSCH_DETAILTIMER_START(calculateHarmonicMapsTime,"CalculateHarmonicMaps");
+        FROSCH_TIMER_START(calculateHarmonicMapsTime,"CalculateHarmonicMaps");
         //The input graph includes all nodes belonging to the 
         RCP<const Map<LO,GO,NO> > dummyOutputMap =MapFactory<LO,GO,NO>::Build(graph->getColMap(),1);
         ExtendOverlapByOneLayer(graph, dummyOutputMap,graph, dummyOutputMap);
