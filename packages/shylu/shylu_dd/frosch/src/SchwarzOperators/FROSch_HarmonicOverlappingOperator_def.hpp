@@ -57,7 +57,6 @@ namespace FROSch {
     {
         HarmonicOnOverlap_ = this->ParameterList_->get("HarmonicOnOverlap",false);
         if(HarmonicOnOverlap_){
-            std::cout<<"HARMONICCCC"<<std::endl;
             FROSCH_ASSERT(this->Combine_ != CombinationType::Averaging, "HarmonicOnOverlap cannot be used with CombinationType==Averaging")
             //TODO: How to do this better?
             if(this->Combine_ == CombinationType::Restricted){
