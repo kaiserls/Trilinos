@@ -1003,11 +1003,18 @@ namespace FROSch {
 
         // Calculate nodes
         auto domainNodesArrayView = rowMap->getNodeElementList();//rowMap so we don't get the interface of the "extended" domain
-        auto nonoverlapNodesArray = Teuchos::Array<GO>(domainNodesArrayView);//copy domain nodes
+        auto nonoverlapNodesArray = Teuchos::Array<GO>();//copy domain nodes
         auto interfaceNodesArray = Teuchos::Array<GO>();//empty array
         auto overlapNodesArray = Teuchos::Array<GO>();//empty array
         auto cutNodesArray = Teuchos::Array<GO>();//empty array
-        auto matrixImportArray = Teuchos::Array<GO>();//empty array
+        Teuchos::Array<GO> matrixImportArray; // assigned to later
+
+        // Reserve space
+        GO all = uniqueMap->getGlobalNumElements();
+        GO nonHigher = uniqueMap->getNodeNumElements();
+        GO ovlpLower = all-nonHigher;
+        nonoverlapNodesArray.reserve(nonHigher);
+        overlapNodesArray.reserve(ovlpLower);
 
         const auto & mult = multiplicityExtended->getData(0);
         const auto & interface = interfaceNodes->getData(0);
@@ -1021,17 +1028,18 @@ namespace FROSch {
             if(isMultiple && !isOnInterface) overlapNodesArray.push_back(global);
             if(isOnInterface) interfaceNodesArray.push_back(global);
             if(isOnInterface && isNotInOwnUnique) cutNodesArray.push_back(global);
+            if(!isMultiple || isOnInterface) nonoverlapNodesArray.push_back(global);
         }
         //TODO: I also include interface nodes by not deleting them. For the rasho i maybe may not do this here, but do it later and name it different
-        // 2. NonOverlappingArray
-        auto & noN = nonoverlapNodesArray; //introduce alias for shorter command
-        // auto remove_condition = [colMap, mult, interface](const GO& node) {
+        // // 2. NonOverlappingArray
+        // auto & noN = nonoverlapNodesArray; //introduce alias for shorter command
+        // // auto remove_condition = [colMap, mult, interface](const GO& node) {
+        // //         return mult[colMap->getLocalElement(node)]>1 && interface[colMap->getLocalElement(node)]<=0; // erase if on overlap
+        // noN.erase(std::remove_if(noN.begin(), noN.end(),
+        //     [colMap, mult, interface](const GO& node) {
         //         return mult[colMap->getLocalElement(node)]>1 && interface[colMap->getLocalElement(node)]<=0; // erase if on overlap
-        noN.erase(std::remove_if(noN.begin(), noN.end(),
-            [colMap, mult, interface](const GO& node) {
-                return mult[colMap->getLocalElement(node)]>1 && interface[colMap->getLocalElement(node)]<=0; // erase if on overlap
-                }
-            ), noN.end());
+        //         }
+        //     ), noN.end());
 
         if(restricted){//could be much faster, already computed cutNodesArray, only a few elements
             matrixImportArray = Teuchos::Array<GO>(domainNodesArrayView);
