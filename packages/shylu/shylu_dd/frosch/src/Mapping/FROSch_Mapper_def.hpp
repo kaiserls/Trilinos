@@ -89,7 +89,7 @@ namespace FROSch {
     template <class SC,class LO,class GO,class NO>
     int Mapper<SC,LO,GO,NO>::restrict(const XMultiVectorPtr source, XMultiVectorPtr & target)
     {
-        //FROSCH_TIMER_START_LEVELID(applyTime,"Mapper::restrict");
+        FROSCH_DETAILTIMER_START(restrict,"Restrict");
         if (source->getMap()->lib() == UseEpetra) { // AH 11/28/2018: For Epetra, XOverlap_ will only have a view to the values of XOverlapTmp_. Therefore, xOverlapTmp should not be deleted before XOverlap_ is used.
 #ifdef HAVE_XPETRA_EPETRA
             if (XOverlapTmp_.is_null()) XOverlapTmp_ = MultiVectorFactory<SC,LO,GO,NO>::Build(OverlappingMap_,source->getNumVectors());
@@ -124,6 +124,7 @@ namespace FROSch {
     template <class SC,class LO,class GO,class NO>
     int Mapper<SC,LO,GO,NO>::prolongate(const XMultiVectorPtr source, XMultiVectorPtr & target)
     {
+         FROSCH_DETAILTIMER_START(prolongate,"Prolongate");
         target->putScalar(ScalarTraits<SC>::zero());
         
         if (Combine_ == Restricted) {
