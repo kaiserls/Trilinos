@@ -1010,11 +1010,12 @@ namespace FROSch {
         Teuchos::Array<GO> matrixImportArray; // assigned to later
 
         // Reserve space
-        GO all = uniqueMap->getGlobalNumElements();
-        GO nonHigher = uniqueMap->getNodeNumElements();
-        GO ovlpLower = all-nonHigher;
-        nonoverlapNodesArray.reserve(nonHigher);
-        overlapNodesArray.reserve(ovlpLower);
+        GO nDomain = colMap->getNodeNumElements();
+        GO nOvlp = uniqueMap->getNodeNumElements();
+        GO nNonOvlp = nDomain - nOvlp;
+        overlapNodesArray.reserve(nOvlp);
+        nonoverlapNodesArray.reserve(nNonOvlp);
+        interfaceNodesArray.reserve(4*sqrt(nDomain));
 
         const auto & mult = multiplicityExtended->getData(0);
         const auto & interface = interfaceNodes->getData(0);
