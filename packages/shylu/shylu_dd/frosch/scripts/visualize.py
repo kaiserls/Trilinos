@@ -211,6 +211,7 @@ def visualizeMap(name:str, size=None, color=None, marker:str=None, offset=None, 
     plt.scatter(xx,yy, s=1, color="black")
 
     # Set all visual parameters
+    my_var_len = 4 if processes_plot<=4 else 9
     if color is None:
         if processes_plot<=4:
             colors = ["r","g","b","y"]
@@ -222,7 +223,9 @@ def visualizeMap(name:str, size=None, color=None, marker:str=None, offset=None, 
         if processes_plot<=4:
             offsets=np.array([[0.1/nx,0.1/ny], [-.1/nx,-.1/ny],[-.1/nx,.1/ny],[.1/nx,-.1/ny]])
         else:
-            offsets=np.array([[-0.05/nx,-0.05/ny],[0.,-0.05/ny],[0.05/nx,-0.05/ny],[-0.05/nx,0.0],[0.,0.],[0.05/nx,0.0],[-0.05/nx,0.05/ny],[0.,0.05/ny],[0.05/nx,0.05/ny]])
+            offx = 0.15/nx
+            offy = 0.15/ny
+            offsets=np.array([[-offx,-offy],[0.,-offy],[offx,-offy],[-offx,0.0],[0.,0.],[offx,0.0],[-offx,offy],[0.,offy],[offx,offy]])
     else:
         offsets=np.array([offset]*processes)
     
@@ -237,15 +240,17 @@ def visualizeMap(name:str, size=None, color=None, marker:str=None, offset=None, 
     
     # Read in and plot
     try:
-        for process in process_list:
+        for process_lin in range(0,processes_plot):
+            set_i = process_lin % my_var_len
+            process = process_list[process_lin]
             if showValues:
                 nodes, values = nodes_and_values_from_txt(process,name, iteration=it)
             else:
                 nodes = nodes_from_txt(process,name, iteration=it)
             if nodes is not None:
-                visualizeNodes(grid, nodes, offsets[process], s=sizes[process], c=colors[process], marker=marker, alpha=alphas[process], label=name+f"-p{process}")
+                visualizeNodes(grid, nodes, offsets[set_i], s=sizes[set_i], c=colors[set_i], marker=marker, alpha=alphas[set_i], label=name+f"-p{process}")
                 if showValues:
-                    visualizeValues(grid, nodes, values, color=colors[process])
+                    visualizeValues(grid, nodes, values, color=colors[set_i])
         legend = plt.legend(loc='upper right', fancybox=True, shadow=True)
     except Exception as e:
         print(e)
@@ -269,7 +274,8 @@ import sys
 
 if __name__=="__main__":
     export = True
-    plot = True
+    plot = False
+    tex=True
 
     nx, ny, processes = read_meta()
 
@@ -287,18 +293,55 @@ if __name__=="__main__":
         export_xdmf(fname, field_names, add_boundary=True, iterations=max_iterations)
 
     if plot:
-        markers=[None, "<","s",""]
+        markers=["$r$","o","s","$o$"]
         #vecs = ["ovlp","nonOvlp", "interface"]
-        vecs=["overlapping", "interface","cut"]
+        #vecs=["overlapping", "interface"]#,"cut"]
+        vecs=["repeated","overlapping", "interface","ovlp"]
         #vecs=["interface","cut"]
-        process_list=[0,1,2,3,4]#i for i in range(0,processes)]
+        #vecs=["overlapping", "ovlp", "interface", "repeated"]
+        process_list=[4]
+        #process_list=[0,1,2,3,4,5,6,34,35,28,29]
+        #process_list=[i for i in range(0,processes)]
         plt.figure()
         for i,name in enumerate(vecs):
             visualizeMap(name, marker=markers[i],process_list=process_list)
             plt.show(block=False)
+        visualizeMap("unique", offset=[0,0], marker="0", size=5**2,process_list=process_list, alpha=1.0)
         visualizeMap("unique", offset=[0,0], marker="x", size=5**2,process_list=process_list, alpha=1.0)
         #visualizeMap("res", offset=[0,0], color="black", marker="x", size=5**2,process_list=process_list, alpha=1.0, showValues=True, it=0)
         #visualizeMap("XTmp_", offset=[0,0], color="black", marker="x", size=5**2,process_list=process_list, alpha=1.0, showValues=True, it=0) 
-        plt.title("nodes")
+        plt.title("nodes "+appendix)
+        plt.legend(bbox_to_anchor=(1.06,1.))
+        plt.show()
+
+    if tex:
+        vecs=["repeated","overlapping", "interface","ovlp", "nonOvlp", "cut"]
+        ploty = int(np.sqrt(len(vecs)))
+        plotx = int(np.ceil(len(vecs)/ploty))
+        process=4
+        it=None
+
+        # plot basic grid
+        nx, ny, processes = read_meta()
+        x,y,xx,yy = generate_grid(nx,ny)
+        grid = (xx,yy)
+
+        plt.figure()
+        for i,name in enumerate(vecs):
+            plt.subplot(plotx, ploty, i+1)
+            plt.scatter(xx,yy, s=1, color="black")
+            try:
+                nodes = nodes_from_txt(process,name, iteration=it)
+                if nodes is not None:
+                    visualizeNodes(grid, nodes, offset=[0,0], s=4**2, c="b", marker="o", alpha=1., label=name)
+                legend = plt.legend(loc='upper right', fancybox=True, shadow=True)
+            except Exception as e:
+                print(e)
+                print(f"Didn't find files for name {name} {process}")
+        
+        plt.suptitle("Nodesets")
         tikz_save('NodeSets.tex')
         plt.show()
+
+
+    
