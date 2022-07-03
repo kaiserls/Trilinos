@@ -311,6 +311,9 @@ int main(int argc, char *argv[])
             assert(false);
         }
 
+        // RCP<FancyOStream> fancy = fancyOStream(rcpFromRef(cout));
+        // KMonolithic->describe(*fancy,VERB_EXTREME);
+
         RCP<MultiVector<SC,LO,GO,NO> > xSolution = MultiVectorFactory<SC,LO,GO,NO>::Build(KMonolithic->getMap(),1);
         RCP<MultiVector<SC,LO,GO,NO> > xRightHandSide = MultiVectorFactory<SC,LO,GO,NO>::Build(KMonolithic->getMap(),1);
         RCP<MultiVector<SC,LO,GO,NO> > xSolutionModified = MultiVectorFactory<SC,LO,GO,NO>::Build(KMonolithic->getMap(),1);
