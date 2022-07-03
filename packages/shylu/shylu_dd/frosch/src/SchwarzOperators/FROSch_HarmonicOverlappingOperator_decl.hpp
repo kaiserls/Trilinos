@@ -123,7 +123,7 @@ namespace FROSch {
 
         XMultiVectorPtr W_;
         mutable XMultiVectorPtr RhsPreSolveTmp_;
-        SolverPtr HarmonicSolver_; //TODO: Maybe delete after preSolve to save memory
+        SolverPtr HarmonicSolver_;
     
     private:
         virtual int setupHarmonicSolver();    

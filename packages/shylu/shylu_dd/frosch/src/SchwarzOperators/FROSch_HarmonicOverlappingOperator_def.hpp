@@ -171,7 +171,6 @@ namespace FROSch {
             UniqueToNonOvlpMapper_->restrict(this->XTmp_, IntermedNonOvlp_);
             // nonoverlapp -> overlap
             NonOvlpToOvlpMapper_->restrict(IntermedNonOvlp_,this->XOverlap_);
-            //TODO: Remove debugging
             #ifndef NDEBUG
             outputWithOtherMap(this->XOverlap_, this->OverlappingMap_, "XOverlap_New", iteration);
             #endif
@@ -236,7 +235,6 @@ namespace FROSch {
         //std::cout<<"              one mroe step: fill complete"<<std::endl;
 
         ovlpMatrix->fillComplete();
-        //std::cout<<"               step completed"<<std::endl;
         HarmonicSolver_ = SolverFactory<SC,LO,GO,NO>::Build(ovlpMatrix,
                                                              sublist(this->ParameterList_,"Solver"),
                                                              string("Solver (Level ") + to_string(this->LevelID_) + string(")"));
@@ -259,7 +257,6 @@ namespace FROSch {
             RhsPreSolveTmp_= MultiVectorFactory<SC,LO,GO,NO>::Build(OvlpMap_, 1);
             RCP<XMultiVector> rhsRCP = RCP<XMultiVector>(&rhs, false);
             auto Aw = MultiVectorFactory<SC,LO,GO,NO>::Build(rhs.getMap(),1);
-            //TODO: Debugging
             #ifndef NDEBUG
             auto rank = rhs.getMap()->getComm()->getRank();
             if(rank==0){
@@ -268,6 +265,7 @@ namespace FROSch {
             #endif
             // Import rhs and set dirichlet entries to zero
             RhsPreSolveTmp_->doImport(rhs, *(*OvlpMapper_).Import_, Xpetra::CombineMode::INSERT);//, true
+            //TODO: Do this for restricted?
             // for(auto globalRow : InterfaceMap_->getNodeElementList()){
             //     LO localRow = OvlpMap_->getLocalElement(globalRow);
             //     RhsPreSolveTmp_->replaceLocalValue(localRow, 0, ScalarTraits<SC>::zero());
