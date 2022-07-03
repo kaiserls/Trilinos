@@ -1155,7 +1155,7 @@ namespace FROSch {
         const auto & rowMap = graph->getRowMap();
         const auto & colMap = graph->getColMap();
         auto interfaceIndexList = Teuchos::Array<GO>();
-        //TODO: interfaceIndexList.reserve()
+        interfaceIndexList.reserve(4*sqrt(colMap->getNodeNumElements())); //Each subdomain not at a domain boundary has ~4*length of the domain interface nodes
         for(auto & globalIndex: colMap->getNodeElementList()){
             bool inRowMap = rowMap->isNodeGlobalElement(globalIndex);
             if(!inRowMap){
