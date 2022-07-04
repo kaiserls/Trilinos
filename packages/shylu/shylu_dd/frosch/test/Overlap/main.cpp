@@ -192,8 +192,8 @@ int main(int argc, char *argv[])
             dofsPerNodeVector[block] = (UN) max(int(DofsPerNode-block),1);
 
             ParameterList GaleriList;
-            GaleriList.set("nx", GO(N*(M+block)));
-            GaleriList.set("ny", GO(N*(M+block)));
+            GaleriList.set("nx", GO(mx*(M+block)));
+            GaleriList.set("ny", GO(my*(M+block)));
             GaleriList.set("nz", GO(N*(M+block)));
             GaleriList.set("mx", GO(mx));
             GaleriList.set("my", GO(my));
