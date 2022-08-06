@@ -44,13 +44,25 @@
 
 #include <FROSch_AlgebraicOverlappingOperator_def.hpp>
 
-
+//TODO: Use get export lids for determining which entries will be sent -> are multiple/interface/....?
+// or findUnionTargetGIDs 
 namespace FROSch {
 
     using namespace std;
     using namespace Teuchos;
     using namespace Xpetra;
 
+    enum PreSolveStrategy {OnOvlp=0, OnOverlapping=1, OnMultiple=2};
+
+
+    /**
+     * @brief This class implements an overlapping operator which enforces and exploits a harmonic decay of the solution on the overlap.
+     * It follows the papers:
+     * - Additive Version: "Sarkis, Marcus. "Partition of unity coarse spaces and Schwarz methods with harmonic overlap." Recent Developments
+     * in Domain Decomposition Methods. Springer, Berlin, Heidelberg, 2002. 77-94."
+     * - Restricted Version: X.-C. Cai, M. Dryja, and M. Sarkis, “Restricted additive schwarz preconditioners with harmonic overlap for symmetric positive definite
+     * linear systems,” SIAM Journal on Numerical Analysis, vol. 41, no. 4, pp. 1209–1231, 2003.
+     */
     template <class SC = double,
               class LO = int,
               class GO = DefaultGlobalOrdinal,
@@ -104,29 +116,33 @@ namespace FROSch {
         // virtual int updateLocalOverlappingMatrices();
 
         bool HarmonicOnOverlap_ = false; //! Use harmonic decay of subdomain "solution" on overlap
-        bool rasho = false; //Use the rasho operator described in paper TODO: "2"
-        //Harmonic
-        //! Sarkis, Marcus. "Partition of unity coarse spaces and Schwarz methods with
-        //! harmonic overlap." Recent Developments in Domain Decomposition Methods. Springer, Berlin, Heidelberg, 2002. 77-94.
-        ConstXMapPtr OvlpMap_; //Contains only the nodes in the area overlapping with others
-        ConstXMapPtr NonOvlpMap_; //Contains only the nodes which are not overlapping
-        ConstXMapPtr InterfaceMap_; //Contains only the nodes of (all) interfaces
-        ConstXMapPtr CutNodesMap_; //Contains the nodes on the interface but not in the own map
-        ConstXMapPtr MatrixImportMap_; //Contains the nodes where the local matrix should be imported
+        bool Rasho_ = false; //Use the restricted mode of the preconditioner, be carefull, this->Combine_ is resetted to additive internally after the constructor.
+        PreSolveStrategy PreSolveStrategy_= PreSolveStrategy::OnOvlp;
+        
+        ConstXMapPtr PreSolveMap_; //Contains the nodes where the system matrix should be imported and the system solved during presolve
+        ConstXMapPtr InnerMap_; //Contains the nodes on which the residum needs to be imported
+        ConstXMapPtr LocalSolveMap_; //Contains the nodes where the system matrix should be imported and the system solved during apply
 
-        MapperPtr OvlpMapper_; //Mapper used for pre-/afterSolve
-        MapperPtr NonOvlpMapper_; //Mapper used for import in harmonic apply
-        //TODO: Remove intermediate step for performance reasons?
-        MapperPtr UniqueToNonOvlpMapper_;
-        MapperPtr NonOvlpToOvlpMapper_;
-        mutable XMultiVectorPtr IntermedNonOvlp_;
+        MapperPtr PreSolveMapper_; //Mapper used for pre-/afterSolve
+        MapperPtr InnerMapper_; //Mapper used for import in harmonic apply
+
+        // TODO: Remove intermediate step for performance reasons?
+        //Mappers used to import the residual on the inner nodes and extend with zero to the extended domain.
+        MapperPtr UniqueToInnerMapper_;
+        MapperPtr InnerToOverlappingMapper_;
+        mutable XMultiVectorPtr IntermediateInner_;
 
         XMultiVectorPtr W_;
         mutable XMultiVectorPtr RhsPreSolveTmp_;
         SolverPtr HarmonicSolver_;
+
+        //TODO: Delete from code, currently here for visualization and consistency with calculateHarmonicMaps interface
+        ConstXMapPtr InterfaceMap_;
+        ConstXMapPtr CutNodesMap_;
+        ConstXMapPtr MultipleMap_;
     
     private:
-        virtual int setupHarmonicSolver();    
+        virtual int setupHarmonicSolver();
     };
 
 }
