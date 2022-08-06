@@ -127,7 +127,13 @@ namespace FROSch {
         }
 
         if (repeatedMap.is_null()) repeatedMap = this->K_->getRangeMap();
-        this->buildOverlappingMatrices(overlap,repeatedMap);
+        if (this->ParameterList_->get("Fake Geometric Overlap", true)) {
+            this->buildOverlappingMatrices(overlap,repeatedMap);
+            std::cout<<"building with repeated map"<<std::endl;
+        } else {
+            this->buildOverlappingMatrices(overlap,this->K_->getRowMap());
+        }
+
         this->initializeOverlappingOperator();
 
         this->IsInitialized_ = true;
@@ -314,11 +320,7 @@ namespace FROSch {
                 this->GlobalOverlappingGraph_ = this->OverlappingMatrix_->getCrsGraph();
                 break;
         }
-        //TODO: Remove debugging code
-        //should be the same
-        // RCP<FancyOStream> wrappedCout = getFancyOStream (rcpFromRef (std::cout)); // Wrap std::cout in a FancyOStream.
-        // this->OverlappingMap_->describe(*wrappedCout, Teuchos::VERB_EXTREME);
-        // this->GlobalOverlappingGraph_->getColMap()->describe(*wrappedCout, Teuchos::VERB_EXTREME);
+
         #ifndef NDEBUG
         output_map(repeatedMap, "repeated");
         #endif
