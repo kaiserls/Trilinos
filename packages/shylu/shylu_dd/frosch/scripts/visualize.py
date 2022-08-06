@@ -170,7 +170,7 @@ def export_xdmf(fname, field_names, add_boundary=True, iterations=1):
     ]
     with meshio.xdmf.TimeSeriesWriter(fname+".xdmf") as writer:
         writer.write_points_cells(points, cells)
-        for it in range(0,iterations):
+        for it in range(0,iterations+1):
             point_data = {}
             for field_name in field_names:
                 preprocessor = get_preprocessor(nx, ny, True, np.abs if field_name in ["res", "global"] else None)
