@@ -184,6 +184,75 @@ namespace FROSch {
         }
         return 0;
     }
+
+    template <class SC, class LO, class GO, class NO>
+    int Mapper<SC,LO,GO,NO>::insertInto(const XMultiVectorPtr uniqueSource, XMultiVectorPtr & target){
+#if defined(HAVE_XPETRA_KOKKOS_REFACTOR) && defined(HAVE_XPETRA_TPETRA)
+            if (target->getMap()->lib() == UseTpetra) {
+                ConstXMapPtr uniqueSourceMap = uniqueSource->getMap();
+                ConstXMapPtr targetMap = target->getMap();
+                auto localUSourceMap = uniqueSourceMap->getLocalMap();
+                auto localTargetMap = targetMap->getLocalMap();
+                // run local restriction on execution space defined by local-map
+                using execution_space = typename XMap::local_map_type::execution_space;
+                Kokkos::RangePolicy<execution_space> policy (0, uniqueSourceMap->getNodeNumElements()); //iterate over unqiqueMap
+                for (UN i=0; i<target->getNumVectors(); i++) {
+                    auto sourceData_i = uniqueSource->getData(i);
+                    auto targetLocalData_i = target->getDataNonConst(i);
+                    Kokkos::parallel_for(
+                      "FROSch_MappingExtern::insertInto", policy,
+                      KOKKOS_LAMBDA(const int j) {
+                        GO gID = localUSourceMap.getGlobalElement(j);
+                        LO lIDTarget = localTargetMap.getLocalElement(gID);
+                        targetLocalData_i[lIDTarget] = sourceData_i[j];
+                      });
+                }
+                Kokkos::fence();
+            } else {
+                exit(1);
+            }
+#else
+    exit(1);
+#endif
+    return 0;
+    }
+
+    //! This method doesn't do any communication betweeen processes!
+    //! It inserts all values for entries which are on the own process and also in the transfer Map to the 
+    template <class SC, class LO, class GO, class NO>
+    int Mapper<SC,LO,GO,NO>::insertIntoWithCheck(const XMultiVectorPtr uniqueSource, XMultiVectorPtr & target){
+#if defined(HAVE_XPETRA_KOKKOS_REFACTOR) && defined(HAVE_XPETRA_TPETRA)
+            if (target->getMap()->lib() == UseTpetra) {
+                ConstXMapPtr uniqueSourceMap = uniqueSource->getMap();
+                ConstXMapPtr targetMap = target->getMap();
+                auto localUSourceMap = uniqueSourceMap->getLocalMap();
+                auto localTargetMap = targetMap->getLocalMap();
+                // run local restriction on execution space defined by local-map
+                using execution_space = typename XMap::local_map_type::execution_space;
+                Kokkos::RangePolicy<execution_space> policy (0, uniqueSourceMap->getNodeNumElements()); //iterate over unqiqueMap
+                for (UN i=0; i<target->getNumVectors(); i++) {
+                    auto sourceData_i = uniqueSource->getData(i);
+                    auto targetLocalData_i = target->getDataNonConst(i);
+                    Kokkos::parallel_for(
+                      "FROSch_MappingExtern::insertInto", policy,
+                      KOKKOS_LAMBDA(const int j) {
+                        GO gID = localUSourceMap.getGlobalElement(j);
+                        LO lIDTarget = localTargetMap.getLocalElement(gID);
+                        if(lIDTarget>-1){
+                            targetLocalData_i[lIDTarget] = sourceData_i[j];
+                        }
+                      });
+                }
+                Kokkos::fence();
+            } else {
+                exit(1);
+            }
+#else
+    exit(1);
+#endif
+    return 0;
+    }
+
 }
 
 #endif

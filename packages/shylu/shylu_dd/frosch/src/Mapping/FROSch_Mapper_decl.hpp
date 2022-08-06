@@ -82,6 +82,8 @@ namespace FROSch {
 
         virtual int restrict(const XMultiVectorPtr source, XMultiVectorPtr & target);
         virtual int prolongate(const XMultiVectorPtr source, XMultiVectorPtr & target);
+        virtual int insertInto(const XMultiVectorPtr uniqueSource, XMultiVectorPtr & target);
+        virtual int insertIntoWithCheck(const XMultiVectorPtr uniqueSource, XMultiVectorPtr & target); //, ConstXMapPtr transferMap);
 
         void setLocalMap(XMultiVector &globalVector);
         void setGlobalMap(XMultiVector &localVector);
