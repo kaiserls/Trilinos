@@ -970,8 +970,9 @@ namespace FROSch {
 
     template <class SC, class LO,class GO,class NO> inline
     int calculateHarmonicMaps(RCP<const CrsGraph<LO,GO,NO> > graph, RCP<MultiVector<SC,LO,GO,NO>> multiplicity,
-                              RCP<const Map<LO,GO,NO> > &nonoverlapMap, RCP<const Map<LO,GO,NO> > &overlapMap, RCP<const Map<LO,GO,NO> > &interfaceMap,
-                              RCP<const Map<LO,GO,NO> > &cutMap,
+                              RCP<const Map<LO,GO,NO> > &multipleMap,
+                              RCP<const Map<LO,GO,NO> > &innerMap, RCP<const Map<LO,GO,NO> > &overlapMap,
+                              RCP<const Map<LO,GO,NO> > &interfaceMap,  RCP<const Map<LO,GO,NO> > &cutMap,
                               RCP<const Map<LO,GO,NO> > &matrixImportMap,
                               bool restricted){
         FROSCH_DETAILTIMER_START(calculateHarmonicMapsTime,"CalculateHarmonicMaps");
@@ -1002,24 +1003,26 @@ namespace FROSch {
 
         // Calculate nodes
         auto domainNodesArrayView = rowMap->getNodeElementList();//rowMap so we don't get the interface of the "extended" domain
-        auto nonoverlapNodesArray = Teuchos::Array<GO>();//copy domain nodes
+        auto innerNodesArray = Teuchos::Array<GO>();//copy domain nodes
         auto interfaceNodesArray = Teuchos::Array<GO>();//empty array
         auto overlapNodesArray = Teuchos::Array<GO>();//empty array
         auto cutNodesArray = Teuchos::Array<GO>();//empty array
+        auto multipleNodesArray = Teuchos::Array<GO>(); //empty array
         Teuchos::Array<GO> matrixImportArray; // assigned to later
 
         // Reserve space
         GO nDomain = colMap->getNodeNumElements();
         GO nOvlp = uniqueMap->getNodeNumElements();
-        GO nNonOvlp = nDomain - nOvlp;
+        GO nInner = nDomain - nOvlp;
         overlapNodesArray.reserve(nOvlp);
-        nonoverlapNodesArray.reserve(nNonOvlp);
+        innerNodesArray.reserve(nInner);
         interfaceNodesArray.reserve(4*sqrt(nDomain));
+        multipleNodesArray.reserve(nOvlp);
 
         const auto & mult = multiplicityExtended->getData(0);
         const auto & interface = interfaceNodes->getData(0);
 
-        // InterfaceNodes, OvlpNodes and CutNodes
+        // InterfaceNodes, OvlpNodes and CutNodes, InnerNodes and MultipleNodes
         for(GO global : domainNodesArrayView){
             LO local = colMap->getLocalElement(global);
             bool isOnInterface = interface[local]>0;
@@ -1028,18 +1031,9 @@ namespace FROSch {
             if(isMultiple && !isOnInterface) overlapNodesArray.push_back(global);
             if(isOnInterface) interfaceNodesArray.push_back(global);
             if(isOnInterface && isNotInOwnUnique) cutNodesArray.push_back(global);
-            if(!isMultiple || isOnInterface) nonoverlapNodesArray.push_back(global);
+            if(!isMultiple || isOnInterface) innerNodesArray.push_back(global);
+            if(isMultiple) multipleNodesArray.push_back(global);
         }
-        //TODO: I also include interface nodes by not deleting them. For the rasho i maybe may not do this here, but do it later and name it different
-        // // 2. NonOverlappingArray
-        // auto & noN = nonoverlapNodesArray; //introduce alias for shorter command
-        // // auto remove_condition = [colMap, mult, interface](const GO& node) {
-        // //         return mult[colMap->getLocalElement(node)]>1 && interface[colMap->getLocalElement(node)]<=0; // erase if on overlap
-        // noN.erase(std::remove_if(noN.begin(), noN.end(),
-        //     [colMap, mult, interface](const GO& node) {
-        //         return mult[colMap->getLocalElement(node)]>1 && interface[colMap->getLocalElement(node)]<=0; // erase if on overlap
-        //         }
-        //     ), noN.end());
 
         if(restricted){//could be much faster, already computed cutNodesArray, only a few elements
             matrixImportArray = Teuchos::Array<GO>(domainNodesArrayView);
@@ -1058,19 +1052,20 @@ namespace FROSch {
         GO baseIndex = 0;
         RCP<const Comm<LO> > SerialComm = rcp(new MpiComm<LO>(MPI_COMM_SELF));
         RCP<const Comm<LO> > GlobalComm = rowMap->getComm();
-        nonoverlapMap = MapFactory<LO,GO,NO>::Build(rowMap->lib(),Teuchos::OrdinalTraits<GO>::invalid(), nonoverlapNodesArray, baseIndex, GlobalComm); //getNonoverlappingNodesMap<LO,GO,NO>(graph, multiplicity);
-        overlapMap = MapFactory<LO,GO,NO>::Build(rowMap->lib(),Teuchos::OrdinalTraits<GO>::invalid(), overlapNodesArray, baseIndex, GlobalComm);//getOverlappingNodesCuttedMap<LO,GO,NO>(graph, multiplicity);
+        innerMap = MapFactory<LO,GO,NO>::Build(rowMap->lib(),Teuchos::OrdinalTraits<GO>::invalid(), innerNodesArray, baseIndex, GlobalComm);
+        overlapMap = MapFactory<LO,GO,NO>::Build(rowMap->lib(),Teuchos::OrdinalTraits<GO>::invalid(), overlapNodesArray, baseIndex, GlobalComm);
         interfaceMap = MapFactory<LO,GO,NO>::Build(rowMap->lib(),Teuchos::OrdinalTraits<GO>::invalid(), interfaceNodesArray, baseIndex, GlobalComm);
         cutMap = MapFactory<LO,GO,NO>::Build(rowMap->lib(),Teuchos::OrdinalTraits<GO>::invalid(), cutNodesArray, baseIndex, GlobalComm);
         matrixImportMap = MapFactory<LO,GO,NO>::Build(rowMap->lib(),Teuchos::OrdinalTraits<GO>::invalid(), matrixImportArray, baseIndex, GlobalComm); 
-        
+        multipleMap = MapFactory<LO,GO,NO>::Build(rowMap->lib(),Teuchos::OrdinalTraits<GO>::invalid(), multipleNodesArray, baseIndex, GlobalComm); 
         // TODO: Undo sorting?
         // sort maps for better debugging
-        nonoverlapMap = SortMapByGlobalIndex(nonoverlapMap);
+        innerMap = SortMapByGlobalIndex(innerMap);
         overlapMap = SortMapByGlobalIndex(overlapMap);
         interfaceMap = SortMapByGlobalIndex(interfaceMap);
         cutMap = SortMapByGlobalIndex(cutMap);
         matrixImportMap = SortMapByGlobalIndex(matrixImportMap);
+        multipleMap = SortMapByGlobalIndex(multipleMap);
 
         return 0;
     }
