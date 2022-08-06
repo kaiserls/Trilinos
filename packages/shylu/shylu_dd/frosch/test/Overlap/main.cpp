@@ -442,7 +442,10 @@ int main(int argc, char *argv[])
     CommWorld->barrier();
     stackedTimer->stop("Overlap Test");
     StackedTimer::OutputOptions options;
-    options.output_fraction = options.output_histogram = options.output_minmax = true;
+
+    options.output_fraction = true;
+    options.output_histogram = options.output_minmax = false;
+
     stackedTimer->report(*out,CommWorld,options);
 
     return(EXIT_SUCCESS);
