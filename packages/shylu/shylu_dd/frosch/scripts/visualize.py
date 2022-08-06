@@ -177,8 +177,8 @@ def export_xdmf(fname, field_names, add_boundary=True, iterations=1):
                 try:
                     append_to_data_set(point_data, processes, field_name, it, preprocessor)
                 except Exception as e:
-                    print(e)
-        
+                    print(e)        
+
             writer.write_data(it, point_data=point_data)
 
 ########################################################################### Visualization with matplotlib
@@ -275,8 +275,7 @@ import sys
 if __name__=="__main__":
     export = True
     plot = False
-    tex=True
-
+    tex = True
     nx, ny, processes = read_meta()
 
     appendix = ""
@@ -286,7 +285,7 @@ if __name__=="__main__":
     print(max_iterations)
     
     if export:
-        field_names = ["rhs", "rhsHarmonic", "w", "res","sol","global","unique", "XOverlap_", "XOverlap_New","XTmp_","LocalSol"]
+        field_names = ["rhs", "rhsHarmonic", "w", "res","sol","unique", "XOverlap_", "XOverlap_New","XTmp_","LocalSol","rhsPreSolveTmp_"]
         field_names_str = re.sub('[^A-Za-z0-9]+', '', str(field_names))
         fname = "out_"+appendix
         export_vtk(fname, field_names, add_boundary=True, iterations=max_iterations)
@@ -299,23 +298,24 @@ if __name__=="__main__":
         vecs=["repeated","overlapping", "interface","ovlp"]
         #vecs=["interface","cut"]
         #vecs=["overlapping", "ovlp", "interface", "repeated"]
-        process_list=[4]
+        process_list=[4,5,6,7,8]
         #process_list=[0,1,2,3,4,5,6,34,35,28,29]
         #process_list=[i for i in range(0,processes)]
         plt.figure()
         for i,name in enumerate(vecs):
             visualizeMap(name, marker=markers[i],process_list=process_list)
             plt.show(block=False)
-        visualizeMap("unique", offset=[0,0], marker="0", size=5**2,process_list=process_list, alpha=1.0)
+        visualizeMap("unique", offset=[0,0], marker="o", size=5**2,process_list=process_list, alpha=1.0)
         visualizeMap("unique", offset=[0,0], marker="x", size=5**2,process_list=process_list, alpha=1.0)
         #visualizeMap("res", offset=[0,0], color="black", marker="x", size=5**2,process_list=process_list, alpha=1.0, showValues=True, it=0)
         #visualizeMap("XTmp_", offset=[0,0], color="black", marker="x", size=5**2,process_list=process_list, alpha=1.0, showValues=True, it=0) 
         plt.title("nodes "+appendix)
         plt.legend(bbox_to_anchor=(1.06,1.))
-        plt.show()
+        plt.show(block=False)
 
     if tex:
-        vecs=["repeated","overlapping", "interface","ovlp", "nonOvlp", "cut"]
+        import matplotlib.patches as patches
+        vecs=["repeated","overlapping", "interface","ovlp", "inner", "cut"]#, "multRow", "multCol"]
         ploty = int(np.sqrt(len(vecs)))
         plotx = int(np.ceil(len(vecs)/ploty))
         process=4
@@ -323,17 +323,31 @@ if __name__=="__main__":
 
         # plot basic grid
         nx, ny, processes = read_meta()
+        # nx=20
+        # ny=10
         x,y,xx,yy = generate_grid(nx,ny)
         grid = (xx,yy)
 
         plt.figure()
         for i,name in enumerate(vecs):
-            plt.subplot(plotx, ploty, i+1)
+            ax = plt.subplot(plotx, ploty, i+1)
             plt.scatter(xx,yy, s=1, color="black")
             try:
                 nodes = nodes_from_txt(process,name, iteration=it)
                 if nodes is not None:
                     visualizeNodes(grid, nodes, offset=[0,0], s=4**2, c="b", marker="o", alpha=1., label=name)
+                    if name=="multRow" or name=="multCol":
+                        values = values_from_txt(process, name, iteration=it)
+                        visualizeValues(grid, nodes, values)
+                nodes = nodes_from_txt(process,"unique", iteration=it)
+                ll = (np.min(xx[nodes])-1./nx/3, np.min(yy[nodes])-1./ny/3)
+                ur = (np.max(xx[nodes])+1./nx/3, np.max(yy[nodes])+1./ny/3)
+                wh = np.array(ur)-np.array(ll)
+                rect = patches.Rectangle(ll, wh[0], wh[1], linewidth=1, edgecolor='r', facecolor='none')
+                ax.add_patch(rect)
+                
+                # if nodes is not None:
+                #     visualizeNodes(grid, nodes, offset=[0,0], s=3**2,c="r", marker="o", alpha=0.7, label="unique")
                 legend = plt.legend(loc='upper right', fancybox=True, shadow=True)
             except Exception as e:
                 print(e)
@@ -343,5 +357,4 @@ if __name__=="__main__":
         tikz_save('NodeSets.tex')
         plt.show()
 
-
-    
+plt.show()
