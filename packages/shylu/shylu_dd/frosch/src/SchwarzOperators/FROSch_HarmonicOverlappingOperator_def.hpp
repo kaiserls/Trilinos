@@ -90,9 +90,12 @@ namespace FROSch {
                 this->calculateMultiplicity();
             }
             // Create needed maps for the nonoverlapping and overlapping part of the domain, cutNodes only needed for restricted paper
-            int res = calculateHarmonicMaps<SC,LO,GO,NO>(this->GlobalOverlappingGraph_, this->Multiplicity_, MultipleMap_, InnerMap_, PreSolveMap_, InterfaceMap_, CutNodesMap_, LocalSolveMap_,Rasho_);
+            RCP<const Map<LO,GO,NO> > interfaceMapNew = calculateInterfacesByMultiplicity(this->GlobalOverlappingGraph_, this->Multiplicity_);
+            int res = calculateHarmonicMapsOptimized<SC,LO,GO,NO>(this->GlobalOverlappingGraph_, this->Multiplicity_, MultipleMap_, InnerMap_, PreSolveMap_, InterfaceMap_, CutNodesMap_, LocalSolveMap_,Rasho_, static_cast<int>(PreSolveStrategy_));
+            
             //TODO: cut nodes in inner map for RASHO?
             this->OverlappingMap_=this->LocalSolveMap_;//TODO: The line above could introduce a really weired bug if the overlappingMatrix is constructed with the overlappingMap but now we redefine the map
+                                                       // Also the multiplicity needs to calculated before this or could get messes up???
             switch (PreSolveStrategy_)
             {
             case OnOvlp:
@@ -287,6 +290,9 @@ namespace FROSch {
             output(rhsRCP,  "rhs",0);
             #endif
             rhs.update(-1,*Aw,1);//rhs-A*w
+            auto xxx = calculateInterfacesByRhsHarmonic(this->OverlappingMap_, rhsRCP);
+
+
             #ifndef NDEBUG
             output(rhsRCP, "rhsHarmonic",0);
             output(W_, "w",0);
