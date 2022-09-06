@@ -52,7 +52,14 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
-    enum PreSolveStrategy {OnOvlp=0, OnOverlapping=1, OnMultiple=2};
+    /**
+     * @brief The PreSolveStrategy decides on what domain the preSolve step is performed and the right hand side is set to zero.
+     * 
+     */
+    enum PreSolveStrategy {
+        OnOvlp=0,       /// PreSolve on the ovlp domain which consist of small disconnected node sets -> Solve is cheap
+        OnOverlapping=1 /// PreSolve on the domain which is also used for apply()-ing the operator -> Setup of preSolve is for free
+    };
 
 
     /**
@@ -113,10 +120,10 @@ namespace FROSch {
         virtual void afterSolve(XMultiVector & lhs);
 
     protected:
-        // virtual int updateLocalOverlappingMatrices();
 
         bool HarmonicOnOverlap_ = false; //! Use harmonic decay of subdomain "solution" on overlap
-        bool Rasho_ = false; //Use the restricted mode of the preconditioner, be carefull, this->Combine_ is resetted to additive internally after the constructor.
+        bool Rasho_ = false; //Use the restricted mode of the preconditioner
+                            // Be carefull, this->Combine_ is resetted to additive internally after the constructor if using Rasho_=True;
         PreSolveStrategy PreSolveStrategy_= PreSolveStrategy::OnOvlp;
         
         ConstXMapPtr PreSolveMap_; //Contains the nodes where the system matrix should be imported and the system solved during presolve
@@ -135,14 +142,10 @@ namespace FROSch {
         XMultiVectorPtr W_;
         mutable XMultiVectorPtr RhsPreSolveTmp_;
         SolverPtr HarmonicSolver_;
-
-        //TODO: Delete from code, currently here for visualization and consistency with calculateHarmonicMaps interface
-        ConstXMapPtr InterfaceMap_;
-        ConstXMapPtr CutNodesMap_;
-        ConstXMapPtr MultipleMap_;
     
     private:
         virtual int setupHarmonicSolver();
+        virtual int calculateHarmonicMapsByMultiplicity(RCP<const CrsGraph<LO,GO,NO> > graph, RCP<MultiVector<SC,LO,GO,NO>> multiplicity);
     };
 
 }

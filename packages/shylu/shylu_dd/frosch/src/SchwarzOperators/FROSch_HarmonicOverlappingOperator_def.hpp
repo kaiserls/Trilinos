@@ -61,8 +61,8 @@ namespace FROSch {
         HarmonicOnOverlap_ = this->ParameterList_->get("HarmonicOnOverlap",false); //Allows to use the debugging output only implemented in this class without using harmonic overlap
         if(HarmonicOnOverlap_){
             FROSCH_ASSERT(this->Combine_ != CombinationType::Averaging, "HarmonicOnOverlap cannot be used with CombinationType==Averaging")
-            if(this->Combine_ == CombinationType::Restricted){ //Rasho is implemented more like a fully additive operator internaly
-                this->Combine_ = CombinationType::Full;
+            if(this->Combine_ == CombinationType::Restricted){ //Rasho is implemented more like a fully additive operator internally, only the node sets are "restricted"
+                this->Combine_ = CombinationType::Full;         // TODO: Could I alternatively use the restricted export?
                 this->Rasho_ = true;
             }
             auto preSolveStrategyString = this->ParameterList_->get("PreSolveStrategy","OnOvlp");
@@ -70,8 +70,8 @@ namespace FROSch {
                 PreSolveStrategy_ = PreSolveStrategy::OnOverlapping;
             } else if (!preSolveStrategyString.compare("OnOvlp")) {
                 PreSolveStrategy_ = PreSolveStrategy::OnOvlp;
-            } else if (!preSolveStrategyString.compare("OnMultiple")) {
-                PreSolveStrategy_ = PreSolveStrategy::OnMultiple;
+            // } else if (!preSolveStrategyString.compare("OnMultiple")) {
+            //     PreSolveStrategy_ = PreSolveStrategy::OnMultiple;
             }
         }
         
@@ -90,26 +90,20 @@ namespace FROSch {
                 this->calculateMultiplicity();
             }
             // Create needed maps for the nonoverlapping and overlapping part of the domain, cutNodes only needed for restricted paper
-            RCP<const Map<LO,GO,NO> > interfaceMapNew = calculateInterfacesByMultiplicity(this->GlobalOverlappingGraph_, this->Multiplicity_);
-            int res = calculateHarmonicMapsOptimized<SC,LO,GO,NO>(this->GlobalOverlappingGraph_, this->Multiplicity_, MultipleMap_, InnerMap_, PreSolveMap_, InterfaceMap_, CutNodesMap_, LocalSolveMap_,Rasho_, static_cast<int>(PreSolveStrategy_));
+            calculateHarmonicMapsByMultiplicity(this->GlobalOverlappingGraph_, this->Multiplicity_);
+
+            RCP<const Map<LO,GO,NO> > dummy1, dummy2, dummy3, dummy4, dummy5, dummy6;
+            calculateHarmonicMaps<SC,LO,GO,NO>(this->GlobalOverlappingGraph_, this->Multiplicity_,
+                  dummy1,dummy2,dummy3,dummy4,dummy5,dummy6,
+                  this->Rasho_, static_cast<int>(this->PreSolveStrategy_));//for reference output
+
             
-            //TODO: cut nodes in inner map for RASHO?
             this->OverlappingMap_=this->LocalSolveMap_;//TODO: The line above could introduce a really weired bug if the overlappingMatrix is constructed with the overlappingMap but now we redefine the map
                                                        // Also the multiplicity needs to calculated before this or could get messes up???
-            switch (PreSolveStrategy_)
-            {
-            case OnOvlp:
-                PreSolveMap_ = PreSolveMap_;
-                break;
-            case OnOverlapping:
-                PreSolveMap_ = this->OverlappingMap_;
-                break;
-            case OnMultiple:
-                PreSolveMap_ = MultipleMap_;
-                break;
-            default:
-                break;
-            }
+            
+
+
+
 
             // Create importer between the (non)overlapping part and the extendend domain
             PreSolveMapper_ = rcp(new Mapper<SC,LO,GO,NO>(this->getDomainMap(), PreSolveMap_, PreSolveMap_, PreSolveMap_, this->Multiplicity_, CombinationType::Restricted));
@@ -177,6 +171,12 @@ namespace FROSch {
             } else {
                 IntermediateInner_->putScalar(ScalarTraits<SC>::zero());
             }
+            // if (this->XOverlap_.is_null()) {
+            //     this->XOverlap_ = MultiVectorFactory<SC,LO,GO,NO>::Build(this->OverlappingMap_,x.getNumVectors());
+            // }
+            // this->Mapper_->setGlobalMap(*(this->XOverlap_));
+            // this->Mapper_->insertInto(this->XTmp_, this->XOverlap_);
+            // this->Mapper_->setLocalMap(*(this->XOverlap_));
             // - unique -> nonoverlap
             UniqueToInnerMapper_->restrict(this->XTmp_, IntermediateInner_);
             // nonoverlapp -> overlap
@@ -214,8 +214,6 @@ namespace FROSch {
         FROSCH_DETAILTIMER_START_LEVELID(setupHarmonicSolver,"OverlappingOperator::setupHarmonicSolver");
         RCP<FancyOStream> wrappedCout = getFancyOStream (rcpFromRef (std::cout)); // Wrap std::cout in a FancyOStream.
         if (PreSolveStrategy_==PreSolveStrategy::OnOverlapping){
-            //TODO: What is the state of the SubdomainSolver_ here? Which solver can I use to assign to the other one? Do I need to call compute one one of them?
-            //TODO: Take care of rasho!!!! For rasho overlappingMap ist not the same as the presolve map? or not?
             HarmonicSolver_ = this->SubdomainSolver_; // The preSolve step for "OnOverlapping" uses the same matrix as the apply step, so we can save some work
         } else {
             RCP<Matrix<SC,LO,GO,NO>> ovlpMatrix = ExtractLocalSubdomainMatrixNonConst<SC,LO,GO,NO>(this->K_, PreSolveMap_);
@@ -252,9 +250,9 @@ namespace FROSch {
             case OnOverlapping:
                 PreSolveMapper_->insertInto(rhsRCP, RhsPreSolveTmp_);
                 break;
-            case OnMultiple:
-                PreSolveMapper_->insertIntoWithCheck(rhsRCP, RhsPreSolveTmp_); //Cant put rhs values in nonovlp part into multipleMap=Presolvemap, entries dont exist there -> check
-                break;
+            // case OnMultiple:
+            //     PreSolveMapper_->insertIntoWithCheck(rhsRCP, RhsPreSolveTmp_); //Cant put rhs values in nonovlp part into multipleMap=Presolvemap, entries dont exist there -> check
+            //     break;
             default:
                 break;
             }
@@ -290,7 +288,6 @@ namespace FROSch {
             output(rhsRCP,  "rhs",0);
             #endif
             rhs.update(-1,*Aw,1);//rhs-A*w
-            auto xxx = calculateInterfacesByRhsHarmonic(this->OverlappingMap_, rhsRCP);
 
 
             #ifndef NDEBUG
@@ -329,6 +326,121 @@ namespace FROSch {
     string HarmonicOverlappingOperator<SC,LO,GO,NO>::description() const
     {
         return "Harmonic Overlap Operator";
+    }
+
+    //TODO: Test if we can work on unique part because we communicate at the end either way.
+    template <class SC,class LO,class GO,class NO>
+    int HarmonicOverlappingOperator<SC,LO,GO,NO>::calculateHarmonicMapsByMultiplicity(RCP<const CrsGraph<LO,GO,NO> > graph, RCP<MultiVector<SC,LO,GO,NO>> multiplicity)
+    {
+        // Prepare
+        const auto & rowMap = graph->getRowMap();
+        const auto & domMap = graph->getColMap();
+        const auto & uniqueMap = multiplicity->getMap();
+
+        //Bring the needed multiplicity values on this process
+        auto multiplicityExtended = MultiVectorFactory<SC,LO,GO,NO>::Build(domMap,1);
+        RCP<Import<LO,GO,NO> >  domImporter = ImportFactory<LO,GO,NO>::Build(uniqueMap,domMap);
+        multiplicityExtended->doImport(*multiplicity, *domImporter, Xpetra::CombineMode::INSERT);
+        output(multiplicityExtended,"multiplicityExtended",0);
+
+        // Mark interface nodes in rowMap, (we'd like to do this on domMap==colMap)
+        auto interfaceNodes = VectorFactory<int,LO,GO,NO>::Build(domMap,1);
+        const auto & mult = multiplicityExtended->getData(0);
+        // for node in overlapping graph:
+        for(LO localRow=0; localRow<rowMap->getNodeNumElements(); localRow++){
+            LO local = domMap->getLocalElement(rowMap->getGlobalElement(localRow));
+            // if multiplicity>1: O(nodes)
+            if(mult[local]>1){
+                ArrayView<const LO> neighbours;
+                graph->getLocalRowView(localRow, neighbours);
+                // for neighbour in graphindices(rownode): O(~6)
+                for(LO neighbour : neighbours){
+                    if (mult[neighbour]<mult[local]){// neighbour node is adjacent to a region with higher multiplicity overlap
+                        //add neighbour to interface nodes
+                        //interfaceNodesArray.push_back(domMap->getGlobalElement(neighbour));
+                        interfaceNodes->sumIntoGlobalValue(domMap->getGlobalElement(neighbour), 1);
+                    }
+                }
+            }
+        }
+        // We didnt catch the interface nodes in colMap, so we have to get them from the other domains
+        //TODO: This is a problem for overlap=0, why???
+        // Communicate back and forth
+        auto interfaceNodesUnique = VectorFactory<int,LO,GO,NO>::Build(uniqueMap);
+        interfaceNodesUnique->doExport(*interfaceNodes, *domImporter, Xpetra::CombineMode::ADD);
+        interfaceNodes->doImport(*interfaceNodesUnique, *domImporter, Xpetra::CombineMode::ADD);
+        
+        // Calculate nodes
+        auto domainNodesArrayView = domMap->getNodeElementList();
+        auto innerNodesArray = Teuchos::Array<GO>();//copy domain nodes
+        auto ovlpNodesArray = Teuchos::Array<GO>();
+        auto restrDomainNodesArray = Teuchos::Array<GO>();
+        // Reserve space
+        GO nDomain = domMap->getNodeNumElements();
+        GO nOvlp = uniqueMap->getNodeNumElements();
+        GO nInner = nDomain - nOvlp;
+        ovlpNodesArray.reserve(nOvlp);
+        innerNodesArray.reserve(nInner);
+        restrDomainNodesArray.reserve(nDomain);
+
+        auto interfaceNodesArray = Teuchos::Array<GO>();
+
+        // Calculate all node sets
+        const auto & interface = interfaceNodes->getData(0);
+        for(GO global : domainNodesArrayView){
+            LO local = domMap->getLocalElement(global);
+            const bool isOnInterface = interface[local]>0;
+            const bool isMultiple = mult[local]>1;
+            const bool isNotInOwnUnique = uniqueMap->getLocalElement(global)<0;
+
+            const bool isOvlp = isMultiple && !isOnInterface;//checked!
+            const bool isCut = this->Rasho_ && isOnInterface && isNotInOwnUnique; //checked!
+            const bool isInner = !isOvlp && !isCut;
+            if(isInner) innerNodesArray.push_back(global);
+            if(isOvlp) ovlpNodesArray.push_back(global);
+            if(!isCut) restrDomainNodesArray.push_back(global);
+            if(isOnInterface) interfaceNodesArray.push_back(global);
+        }
+
+        //Calculate map
+        GO baseIndex = 0;
+        RCP<const Comm<LO> > SerialComm = rcp(new MpiComm<LO>(MPI_COMM_SELF));
+        RCP<const Comm<LO> > GlobalComm = domMap->getComm();
+        RCP<const Map<LO,GO,NO> > ovlpMap = MapFactory<LO,GO,NO>::Build(domMap->lib(),Teuchos::OrdinalTraits<GO>::invalid(), ovlpNodesArray(), baseIndex, GlobalComm);
+        RCP<const Map<LO,GO,NO> > innerMap = MapFactory<LO,GO,NO>::Build(domMap->lib(),Teuchos::OrdinalTraits<GO>::invalid(), innerNodesArray(), baseIndex, GlobalComm);
+        RCP<const Map<LO,GO,NO> > restrDomainMap = MapFactory<LO,GO,NO>::Build(domMap->lib(),Teuchos::OrdinalTraits<GO>::invalid(), restrDomainNodesArray(), baseIndex, GlobalComm);
+
+        RCP<const Map<LO,GO,NO> > interfaceMap = MapFactory<LO,GO,NO>::Build(domMap->lib(),Teuchos::OrdinalTraits<GO>::invalid(), interfaceNodesArray(), baseIndex, GlobalComm);
+        
+        // Assign the maps
+        this->InnerMap_ = innerMap;
+        RCP<const Map<LO,GO,NO> > newDomainMap = this->Rasho_ ? restrDomainMap : this->OverlappingMap_;
+        switch (PreSolveStrategy_){
+            case OnOvlp:
+                this->PreSolveMap_ = ovlpMap;
+                this->LocalSolveMap_ = newDomainMap;
+                break;
+            case OnOverlapping:
+                this->PreSolveMap_ =  newDomainMap;
+                this->LocalSolveMap_ = newDomainMap;
+                break;
+            default:
+                exit(1);
+                break;
+        }
+
+        //TODO: Remove
+        bool out_maps=true;
+        // #ifndef NDEBUG
+        if(out_maps){
+            output_map(ovlpMap,"ovlp");
+            output_map(innerMap,"inner");
+            output_map(restrDomainMap, "restrDomain");
+
+            output_map(interfaceMap, "interface");
+        }// #endif
+
+        return 0;
     }
 }
 
