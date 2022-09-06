@@ -61,6 +61,16 @@ namespace FROSch {
         OnOverlapping=1 /// PreSolve on the domain which is also used for apply()-ing the operator -> Setup of preSolve is for free
     };
 
+    /**
+     * @brief The CalcInterfaceStrategy decides how the interface nodes are calculated
+     * 
+     */
+    enum CalcInterfaceStrategy {
+        Exact=0,            /// Exact expands the connectivity graph by one more layer and takes the newly added nodes as interface nodes.
+        ByMultiplicity=1,   /// ByMultiplicity inspects differences in the multiplicity value between neighboring nodes
+        ByRhsHarmonic       /// ByRhsHarmonic inspects the rhs after the preSolve step and determindes the interface nodes by rhs values larger than on (and colMult>1).
+    };
+
 
     /**
      * @brief This class implements an overlapping operator which enforces and exploits a harmonic decay of the solution on the overlap.
@@ -125,27 +135,37 @@ namespace FROSch {
         bool Rasho_ = false; //Use the restricted mode of the preconditioner
                             // Be carefull, this->Combine_ is resetted to additive internally after the constructor if using Rasho_=True;
         PreSolveStrategy PreSolveStrategy_= PreSolveStrategy::OnOvlp;
+        CalcInterfaceStrategy CalcInterfaceStrategy_ = CalcInterfaceStrategy::Exact;
+
         
         ConstXMapPtr PreSolveMap_; //Contains the nodes where the system matrix should be imported and the system solved during presolve
-        ConstXMapPtr InnerMap_; //Contains the nodes on which the residum needs to be imported
+        ConstXMapPtr ResidualMap_; //Contains the nodes on which the residum needs to be imported
         ConstXMapPtr LocalSolveMap_; //Contains the nodes where the system matrix should be imported and the system solved during apply
+        ConstXMapPtr UniqueMap_;
 
         MapperPtr PreSolveMapper_; //Mapper used for pre-/afterSolve
-        MapperPtr InnerMapper_; //Mapper used for import in harmonic apply
+        MapperPtr ResidualMapper_; //Mapper used for import in harmonic apply
 
         // TODO: Remove intermediate step for performance reasons?
         //Mappers used to import the residual on the inner nodes and extend with zero to the extended domain.
-        MapperPtr UniqueToInnerMapper_;
+        MapperPtr UniqueToResidualMapper_;
         MapperPtr InnerToOverlappingMapper_;
         mutable XMultiVectorPtr IntermediateInner_;
 
         XMultiVectorPtr W_;
-        mutable XMultiVectorPtr RhsPreSolveTmp_;
         SolverPtr HarmonicSolver_;
     
-    private:
+    protected:
         virtual int setupHarmonicSolver();
-        virtual int calculateHarmonicMapsByMultiplicity(RCP<const CrsGraph<LO,GO,NO> > graph, RCP<MultiVector<SC,LO,GO,NO>> multiplicity);
+        virtual int calculateHarmonicMaps();
+        virtual int assignMaps(ConstXMapPtr interfaceMap, ConstXMapPtr ovlpMap, ConstXMapPtr innerMap, ConstXMapPtr restrDomainMap);
+
+    private:
+        virtual int calculateHarmonicMapsExact();
+        virtual int calculateHarmonicMapsByMultiplicity();
+        virtual int calculateHarmonicMapsByRhsHarmonic();
+
+        virtual RCP<const Map<LO,GO,NO>> calculateInterfacesByRhsHarmonic(RCP<MultiVector<SC,LO,GO,NO>> rhsHarmonic);
     };
 
 }

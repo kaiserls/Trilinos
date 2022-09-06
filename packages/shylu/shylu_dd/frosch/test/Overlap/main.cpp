@@ -183,6 +183,7 @@ int main(int argc, char *argv[])
 
         ArrayRCP<RCP<Matrix<SC,LO,GO,NO> > > K(NumberOfBlocks);
         ArrayRCP<RCP<Map<LO,GO,NO> > > RepeatedMaps(NumberOfBlocks);
+        ArrayRCP<RCP<Map<LO,GO,NO> > > UniqueMaps(NumberOfBlocks);
         ArrayRCP<RCP<MultiVector<SC,LO,GO,NO> > > Coordinates(NumberOfBlocks);
         ArrayRCP<UN> dofsPerNodeVector(NumberOfBlocks);
 
@@ -270,6 +271,7 @@ int main(int argc, char *argv[])
                 assert(false);
             }
 
+            UniqueMaps[block]   = UniqueMap;
             RepeatedMaps[block] = BuildRepeatedMapNonConst<LO,GO,NO>(K[block]->getCrsGraph()); //RCP<FancyOStream> fancy = fancyOStream(rcpFromRef(cout)); RepeatedMaps[block]->describe(*fancy,VERB_EXTREME);
         }
 

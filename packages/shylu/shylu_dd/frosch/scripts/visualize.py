@@ -285,7 +285,7 @@ if __name__=="__main__":
     print(max_iterations)
     
     if export:
-        field_names = ["rhs", "rhsHarmonic", "w", "res","sol","unique", "XOverlap_", "XOverlap_New","XTmp_","LocalSol","rhsPreSolveTmp_"]
+        field_names = ["rhs", "rhsHarmonic", "w", "res","sol","unique", "XOverlap_", "XOverlap_New","XTmp_","LocalSol","rhsPreSolveTmp_", "multiplicityExtended"]
         field_names_str = re.sub('[^A-Za-z0-9]+', '', str(field_names))
         fname = "out_"+appendix
         export_vtk(fname, field_names, add_boundary=True, iterations=max_iterations)
@@ -315,7 +315,8 @@ if __name__=="__main__":
 
     if tex:
         import matplotlib.patches as patches
-        vecs=["repeated","overlapping", "interface","ovlp", "inner", "cut"]#, "multRow", "multCol"]
+        vecs_old = ["ovlpOld", "innerOld", "interfaceOld", "cutOld", "multipleOld", "cut"]
+        vecs=["repeated","overlapping", "interface","ovlp", "inner", "restrDomain"]+ vecs_old
         ploty = int(np.sqrt(len(vecs)))
         plotx = int(np.ceil(len(vecs)/ploty))
         process=4
@@ -336,7 +337,7 @@ if __name__=="__main__":
                 nodes = nodes_from_txt(process,name, iteration=it)
                 if nodes is not None:
                     visualizeNodes(grid, nodes, offset=[0,0], s=4**2, c="b", marker="o", alpha=1., label=name)
-                    if name=="multRow" or name=="multCol":
+                    if name=="multRow" or name=="multCol" or name=="multiplicityExtended":
                         values = values_from_txt(process, name, iteration=it)
                         visualizeValues(grid, nodes, values)
                 nodes = nodes_from_txt(process,"unique", iteration=it)
@@ -353,7 +354,7 @@ if __name__=="__main__":
                 print(e)
                 print(f"Didn't find files for name {name} {process}")
         
-        plt.suptitle("Nodesets")
+        plt.suptitle("Nodesets "+ appendix)
         tikz_save('NodeSets.tex')
         plt.show()
 
