@@ -187,6 +187,7 @@ namespace FROSch {
 
     template <class SC, class LO, class GO, class NO>
     int Mapper<SC,LO,GO,NO>::insertInto(const XMultiVectorPtr uniqueSource, XMultiVectorPtr & target){
+        FROSCH_DETAILTIMER_START(insertInto,"InsertInto");
 #if defined(HAVE_XPETRA_KOKKOS_REFACTOR) && defined(HAVE_XPETRA_TPETRA)
             if (target->getMap()->lib() == UseTpetra) {
                 ConstXMapPtr uniqueSourceMap = uniqueSource->getMap();
@@ -221,6 +222,7 @@ namespace FROSch {
     //! It inserts all values for entries which are on the own process and also in the transfer Map to the 
     template <class SC, class LO, class GO, class NO>
     int Mapper<SC,LO,GO,NO>::insertIntoWithCheck(const XMultiVectorPtr uniqueSource, XMultiVectorPtr & target){
+        FROSCH_DETAILTIMER_START(insertIntoWithCheck,"InsertIntoWithCheck");
 #if defined(HAVE_XPETRA_KOKKOS_REFACTOR) && defined(HAVE_XPETRA_TPETRA)
             if (target->getMap()->lib() == UseTpetra) {
                 ConstXMapPtr uniqueSourceMap = uniqueSource->getMap();
