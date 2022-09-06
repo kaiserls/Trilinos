@@ -129,7 +129,6 @@ namespace FROSch {
         if (repeatedMap.is_null()) repeatedMap = this->K_->getRangeMap();
         if (this->ParameterList_->get("Fake Geometric Overlap", true)) {
             this->buildOverlappingMatrices(overlap,repeatedMap);
-            std::cout<<"building with repeated map"<<std::endl;
         } else {
             this->buildOverlappingMatrices(overlap,this->K_->getRowMap());
         }
