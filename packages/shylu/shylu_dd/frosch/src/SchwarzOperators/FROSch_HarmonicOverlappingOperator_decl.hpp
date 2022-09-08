@@ -133,7 +133,7 @@ namespace FROSch {
 
     protected:
         // Parameters which will be set by user
-        bool OutputMapsAndVectors_ = true;//TODO: Set to false
+        bool OutputMapsAndVectors_ = false;
         bool HarmonicOnOverlap_ = false; //! Use harmonic decay of subdomain "solution" on overlap
         bool Rasho_ = false; //Use the restricted mode of the preconditioner
                             // Be carefull, this->Combine_ is resetted to additive internally after the constructor if using Rasho_=True;
