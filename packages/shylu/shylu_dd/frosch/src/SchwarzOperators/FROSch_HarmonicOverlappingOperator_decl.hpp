@@ -118,7 +118,9 @@ namespace FROSch {
 
         virtual int compute();
         virtual string description() const;
-
+        virtual void printParameterDescription() const;
+        
+        // Implementing the three interfaces methods of the preconditioner
         virtual void apply(const XMultiVector &x,
                            XMultiVector &y,
                            bool usePreconditionerOnly,
@@ -130,16 +132,17 @@ namespace FROSch {
         virtual void afterSolve(XMultiVector & lhs);
 
     protected:
-
+        // Parameters which will be set by user
+        bool OutputMapsAndVectors_ = true;//TODO: Set to false
         bool HarmonicOnOverlap_ = false; //! Use harmonic decay of subdomain "solution" on overlap
         bool Rasho_ = false; //Use the restricted mode of the preconditioner
                             // Be carefull, this->Combine_ is resetted to additive internally after the constructor if using Rasho_=True;
         PreSolveStrategy PreSolveStrategy_= PreSolveStrategy::OnOvlp;
         CalcInterfaceStrategy CalcInterfaceStrategy_ = CalcInterfaceStrategy::Exact;
 
-        
+        // Internally needed variables
         ConstXMapPtr PreSolveMap_; //Contains the nodes where the system matrix should be imported and the system solved during presolve
-        ConstXMapPtr ResidualMap_; //Contains the nodes on which the residum needs to be imported
+        ConstXMapPtr ResidualMap_; //Contains the nodes on which the residuum needs to be imported
         ConstXMapPtr LocalSolveMap_; //Contains the nodes where the system matrix should be imported and the system solved during apply
         ConstXMapPtr UniqueMap_;
 
@@ -149,8 +152,8 @@ namespace FROSch {
         // TODO: Remove intermediate step for performance reasons?
         //Mappers used to import the residual on the inner nodes and extend with zero to the extended domain.
         MapperPtr UniqueToResidualMapper_;
-        MapperPtr InnerToOverlappingMapper_;
-        mutable XMultiVectorPtr IntermediateInner_;
+        MapperPtr ResidualToOverlappingMapper_;
+        mutable XMultiVectorPtr IntermediateResidual_;
 
         XMultiVectorPtr W_;
         SolverPtr HarmonicSolver_;
@@ -161,11 +164,13 @@ namespace FROSch {
         virtual int assignMaps(ConstXMapPtr interfaceMap, ConstXMapPtr ovlpMap, ConstXMapPtr innerMap, ConstXMapPtr restrDomainMap);
 
     private:
-        virtual int calculateHarmonicMapsExact();
-        virtual int calculateHarmonicMapsByMultiplicity();
-        virtual int calculateHarmonicMapsByRhsHarmonic();
-
-        virtual RCP<const Map<LO,GO,NO>> calculateInterfacesByRhsHarmonic(RCP<MultiVector<SC,LO,GO,NO>> rhsHarmonic);
+        virtual int calculateHarmonicMapsFromInterface();
+        // Methods dedicated to calculating the interface nodes
+        virtual RCP<MultiVector<int,LO,GO,NO>> calculateInterfaceExact();
+        virtual RCP<MultiVector<int,LO,GO,NO>> calculateInterfaceByMultiplicity();
+        virtual RCP<MultiVector<int,LO,GO,NO>> calculateInterfaceByRhsHarmonic();
+        XMultiVectorPtr RhsHarmonic_; // TODO: Not implemented
+        RCP<MultiVector<int,LO,GO,NO>> Interfaces_;
     };
 
 }

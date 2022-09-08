@@ -76,23 +76,10 @@ namespace FROSch {
         }
     }
 
-    /**
-     * @brief Builds the overlapping matrix with given overlap and initializes the underlying OverlappingOperator.
-     *        It prepares import/export objects and calculates multiplicity of nodes if needed.
-     * 
-     * @param overlap The number of layers in the overlap of the domain decomposition
-     * @param repeatedMap This map is like the unique map from the domain decomposition but shares the interfaces across the corresponding ranks.
-     * @return int Returns 0 if successful.
-     * @post IsInitialized_ = true, IsComputed_ = false;
-     */
     template <class SC,class LO,class GO,class NO>
-    int AlgebraicOverlappingOperator<SC,LO,GO,NO>::initialize(int overlap,
-                                                              ConstXMapPtr repeatedMap)
+    void AlgebraicOverlappingOperator<SC,LO,GO,NO>::printParameterDescription() const
     {
-        FROSCH_TIMER_START_LEVELID(initializeTime,"AlgebraicOverlappingOperator::initialize");
-
-        if (this->Verbose_) {
-            cout
+        cout
             << "\n" << setw(FROSCH_OUTPUT_INDENT) << " "
             << setw(89) << "-----------------------------------------------------------------------------------------"
             << "\n" << setw(FROSCH_OUTPUT_INDENT) << " "
@@ -124,6 +111,25 @@ namespace FROSch {
             << "\n" << setw(FROSCH_OUTPUT_INDENT) << " "
             << setw(89) << "-----------------------------------------------------------------------------------------"
             << endl;
+    }
+
+    /**
+     * @brief Builds the overlapping matrix with given overlap and initializes the underlying OverlappingOperator.
+     *        It prepares import/export objects and calculates multiplicity of nodes if needed.
+     * 
+     * @param overlap The number of layers in the overlap of the domain decomposition
+     * @param repeatedMap This map is like the unique map from the domain decomposition but shares the interfaces across the corresponding ranks.
+     * @return int Returns 0 if successful.
+     * @post IsInitialized_ = true, IsComputed_ = false;
+     */
+    template <class SC,class LO,class GO,class NO>
+    int AlgebraicOverlappingOperator<SC,LO,GO,NO>::initialize(int overlap,
+                                                              ConstXMapPtr repeatedMap)
+    {
+        FROSCH_TIMER_START_LEVELID(initializeTime,"AlgebraicOverlappingOperator::initialize");
+
+        if (this->Verbose_) {
+            this->printParameterDescription();
         }
 
         if (repeatedMap.is_null()) repeatedMap = this->K_->getRangeMap();
@@ -319,10 +325,6 @@ namespace FROSch {
                 this->GlobalOverlappingGraph_ = this->OverlappingMatrix_->getCrsGraph();
                 break;
         }
-
-        #ifndef NDEBUG
-        output_map(repeatedMap, "repeated");
-        #endif
         
         return 0;
     }

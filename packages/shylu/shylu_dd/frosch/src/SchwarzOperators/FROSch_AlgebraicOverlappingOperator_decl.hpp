@@ -97,6 +97,8 @@ namespace FROSch {
 
         virtual string description() const;
 
+        virtual void printParameterDescription() const;
+
     protected:
 
         int buildOverlappingMatrices(int overlap,

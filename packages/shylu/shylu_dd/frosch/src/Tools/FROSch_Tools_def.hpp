@@ -968,50 +968,6 @@ namespace FROSch {
         return 0;
     }
     
-    //TODO: Rename: Nodes vs DOFS, decide for one / check coarse operator for node/dof map
-    //! Assumes fillComplete on Graph generates minimal column map. Assumption could be removed by checking for zero entry.
-    template <class LO,class GO,class NO>
-    Teuchos::Array<GO> getLocalInterfaceNodes(RCP<const CrsGraph<LO,GO,NO> > graph)
-    {
-        FROSCH_DETAILTIMER_START(getLocalInterfaceNodes,"getLocalInterfaceNodes");
-
-        const auto & rowMap = graph->getRowMap();
-        const auto & colMap = graph->getColMap();
-        auto interfaceIndexList = Teuchos::Array<GO>();
-        interfaceIndexList.reserve(4*sqrt(colMap->getNodeNumElements())); //Each subdomain not at a domain boundary has ~4*length of the domain interface nodes
-        for(auto & globalIndex: colMap->getNodeElementList()){
-            bool inRowMap = rowMap->isNodeGlobalElement(globalIndex);
-            if(!inRowMap){
-                interfaceIndexList.push_back(globalIndex);
-            }
-        }
-        //TODO: Remove debugging code
-        // RCP<FancyOStream> wrappedCout = getFancyOStream (rcpFromRef (std::cout)); // Wrap std::cout in a FancyOStream.
-        // rowMap->describe(*wrappedCout, Teuchos::VERB_EXTREME);
-        // colMap->describe(*wrappedCout, Teuchos::VERB_EXTREME);
-        // std::cout<<"interfaceIndexList:\n"<<rowMap->getComm()->getRank()<<" "<<interfaceIndexList<<std::endl;
-        return interfaceIndexList;
-    }
-
-    template <class LO,class GO,class NO>
-    Teuchos::RCP<Xpetra::Vector<int, LO,GO,NO>> getGlobalInterfaceNodes(RCP<const CrsGraph<LO,GO,NO> > graph)
-    {
-        FROSCH_DETAILTIMER_START(getGlobalInterfaceNodes,"getGlobalInterfaceNodes");
-        
-        auto interfaceNodesArray = getLocalInterfaceNodes(graph);
-
-        const auto & rowMap = graph->getRowMap();
-        const auto & colMap = graph->getColMap();
-        auto interfaceNodes = VectorFactory<int,LO,GO,NO>::Build(colMap);
-        
-        for(auto & globalIndex: interfaceNodesArray){
-            interfaceNodes->sumIntoGlobalValue(globalIndex, 1);
-        }
-        return interfaceNodes;
-    }
-
-
-
     //! Returns a map which has the same distribution as the inputMap, but is ordered by the global Index.
     template <class LO,class GO,class NO>
     RCP<const Map<LO,GO,NO> > SortMapByGlobalIndex(RCP<const Map<LO,GO,NO> > inputMap)
