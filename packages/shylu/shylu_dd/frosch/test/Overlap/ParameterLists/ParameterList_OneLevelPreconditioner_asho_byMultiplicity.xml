@@ -2,9 +2,9 @@
     <Parameter name="Linear Solver Type" type="string" value="Belos"/>
     <ParameterList name="Linear Solver Types">
         <ParameterList name="Belos">
-            <Parameter name="Solver Type" type="string" value="Block GMRES"/>
+            <Parameter name="Solver Type" type="string" value="Pseudo Block CG"/>
             <ParameterList name="Solver Types">
-                <ParameterList name="Block GMRES">
+                <ParameterList name="Pseudo Block CG">
                     <Parameter name="PreconditionerPosition" type="string" value="left"/>
                     <Parameter name="Block Size" type="int" value="1"/>
                     <Parameter name="Convergence Tolerance" type="double" value="1e-4"/>
@@ -26,6 +26,8 @@
             <ParameterList name="HarmonicOverlappingOperator">
                 <Parameter name="Combine Values in Overlap"                     type="string" value="Full"/><!--Restricted,Averaging,Full-->
                 <Parameter name="HarmonicOnOverlap"                             type="bool"   value="1"/>
+                <Parameter name="PreSolveStrategy"                              type="string" value="OnOverlapping"/><!--OnOverlapping, OnOvlp, OnMultiple-->
+                <Parameter name="CalcInterfaceStrategy"                         type="string" value="ByMultiplicity"/>
                 <Parameter name="Adding Layers Strategy"                        type="string"   value="CrsMatrix"/>
                 <ParameterList name="Solver">
                     <Parameter name="SolverType"                                type="string"   value="Amesos2"/>
