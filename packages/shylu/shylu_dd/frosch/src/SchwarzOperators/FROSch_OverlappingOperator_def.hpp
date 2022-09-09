@@ -72,7 +72,6 @@ namespace FROSch {
         SubdomainSolver_.reset();
     }
 
-    //TODO: For harmonic(but not for the presolve/afterSolve): use altered scatter importer to reduce communication to nonoverlapping, restrictedMode?
     template <class SC,class LO,class GO,class NO>
     void OverlappingOperator<SC,LO,GO,NO>::restrictFromInto(const XMultiVectorPtr source, XMultiVectorPtr & target) const
     {
@@ -81,7 +80,6 @@ namespace FROSch {
         Mapper_->restrict(source, target);
     }
 
-    //TODO: for harmonic (but not pre/aftersolve)
     //For restricted: Replace xmultivector by map containing the nodes which should be imported.
     //                This would be getNonoverlappingNodesMap orSomeslightlymodified version for the restricted paper.
     //For all other: Use altered scatter importer to reduce communication to nonoverlapping

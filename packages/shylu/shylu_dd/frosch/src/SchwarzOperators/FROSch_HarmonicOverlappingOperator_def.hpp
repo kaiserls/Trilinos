@@ -103,7 +103,8 @@ namespace FROSch {
             // Create needed maps for the nonoverlapping and overlapping part of the domain, cutNodes only needed for restricted paper
             calculateHarmonicMaps();
 
-            this->OverlappingMap_=this->LocalSolveMap_;//TODO: The line above could introduce a really weired bug if the overlappingMatrix is constructed with the overlappingMap but now we redefine the map
+            this->OverlappingMap_=this->LocalSolveMap_;//TODO: The line above could introduce really weired bugs
+                                                       // e. g. if the overlappingMatrix is constructed with the overlappingMap but now we redefine the map
                                                        // Also the multiplicity needs to calculated before this or could get messes up???
             
             PreSolveMapper_ = rcp(new Mapper<SC,LO,GO,NO>(UniqueMap_, PreSolveMap_, PreSolveMap_, PreSolveMap_, this->Multiplicity_, CombinationType::Restricted));
@@ -281,21 +282,6 @@ namespace FROSch {
                 output(rhsRCP, "rhsHarmonic",0);
                 output(W_, "w",0);
             }
-
-            if(CalcInterfaceStrategy_==ByRhsHarmonic){
-            FROSCH_DETAILTIMER_START_LEVELID(computeByRhs,"OverlappingOperator::computeByRhs");
-            //ResidualMap_ = calculateInterfaceByRhsHarmonic();
-            ResidualMapper_ = rcp(new Mapper<SC,LO,GO,NO>(UniqueMap_, this->OverlappingMap_, ResidualMap_, ResidualMap_, this->Multiplicity_, this->Combine_));
-            UniqueToResidualMapper_ = rcp(new Mapper<SC,LO,GO,NO>(UniqueMap_, ResidualMap_, ResidualMap_, ResidualMap_, this->Multiplicity_, this->Combine_));
-            ResidualToOverlappingMapper_ = rcp(new Mapper<SC,LO,GO,NO>(ResidualMap_, this->OverlappingMap_, this->OverlappingMap_, this->OverlappingMap_, this->Multiplicity_, this->Combine_));
-            //calculateHarmonicMapsByRhsHarmonic();TODO: Would call here
-            RCP<Matrix<SC,LO,GO,NO>> restrMatrix = ExtractLocalSubdomainMatrixNonConst<SC,LO,GO,NO>(this->K_, LocalSolveMap_);
-            this->SubdomainSolver_ = SolverFactory<SC,LO,GO,NO>::Build(restrMatrix,
-                                                                sublist(this->ParameterList_,"Solver"),
-                                                                string("Solver (Level ") + to_string(this->LevelID_) + string(")"));
-            this->SubdomainSolver_->initialize();
-            this->SubdomainSolver_->compute();
-        }
         }
     }
 
@@ -447,10 +433,8 @@ namespace FROSch {
                 break;
             case ByRhsHarmonic:
                 TEUCHOS_TEST_FOR_EXCEPTION(!(PreSolveStrategy_==OnOverlapping), std::invalid_argument, "CalculateInterface::ByRhsHarmonic can only be combined with PreSolveStrategy::OnOverlapping");
-                //calculateHarmonicMapsByRhsHarmonic(); // Will be called later
-                //assignMaps(null, null, null, this->OverlappingMap_);
-                Interfaces_ = calculateInterfaceExact();
                 TEUCHOS_TEST_FOR_EXCEPTION(true, std::logic_error, "Not implemented!");
+                // Would need to call calcHarmonicMaps after PreSolve with rhs and then set up the residualMappers and in case of rasho set up a new solver or edit the current one (and recompute)
                 break;
             default:
                 TEUCHOS_TEST_FOR_EXCEPTION(true, std::logic_error, "Invalid value for CalcInterfaceStrategy_ occurred: " << CalcInterfaceStrategy_);

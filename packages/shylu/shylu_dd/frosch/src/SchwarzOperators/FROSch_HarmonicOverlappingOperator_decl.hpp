@@ -44,8 +44,6 @@
 
 #include <FROSch_AlgebraicOverlappingOperator_def.hpp>
 
-//TODO: Use get export lids for determining which entries will be sent -> are multiple/interface/....?
-// or findUnionTargetGIDs 
 namespace FROSch {
 
     using namespace std;
@@ -149,7 +147,7 @@ namespace FROSch {
         MapperPtr PreSolveMapper_; //Mapper used for pre-/afterSolve
         MapperPtr ResidualMapper_; //Mapper used for import in harmonic apply
 
-        // TODO: Remove intermediate step for performance reasons?
+        // TODO: Remove intermediate step for performance reasons? Yes, increases for asho by nearly factor 2
         //Mappers used to import the residual on the inner nodes and extend with zero to the extended domain.
         MapperPtr UniqueToResidualMapper_;
         MapperPtr ResidualToOverlappingMapper_;
@@ -169,7 +167,6 @@ namespace FROSch {
         virtual RCP<MultiVector<int,LO,GO,NO>> calculateInterfaceExact();
         virtual RCP<MultiVector<int,LO,GO,NO>> calculateInterfaceByMultiplicity();
         virtual RCP<MultiVector<int,LO,GO,NO>> calculateInterfaceByRhsHarmonic();
-        XMultiVectorPtr RhsHarmonic_; // TODO: Not implemented
         RCP<MultiVector<int,LO,GO,NO>> Interfaces_;
     };
 
