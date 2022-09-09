@@ -5,6 +5,7 @@ DEST_FILES ParameterList_OneLevelPreconditioner_Graph.xml
            ParameterList_OneLevelPreconditioner_cg.xml
            ParameterList_OneLevelPreconditioner_asho.xml
            ParameterList_OneLevelPreconditioner_rasho.xml
+           ParameterList_OneLevelPreconditioner_ras.xml
            ParameterList_OneLevelPreconditioner_cg_NonRepeated.xml
            ParameterList_OneLevelPreconditioner_asho_byMultiplicity.xml
            ParameterList_OneLevelPreconditioner_asho_byRhsHarmonic.xml

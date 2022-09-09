@@ -247,6 +247,14 @@ NUM_MPI_PROCS 4
 
 TRIBITS_ADD_TEST(
 overlap
+NAME test_overlap_Matrix_DIM2_DPN1_TPETRA_RAS
+ARGS "--M=5 --DIM=2 --O=2 --DPN=1 --PLIST=ParameterLists/ParameterList_OneLevelPreconditioner_ras.xml --USETPETRA"
+COMM mpi
+NUM_MPI_PROCS 4
+)
+
+TRIBITS_ADD_TEST(
+overlap
 NAME test_overlap_Matrix_DIM2_DPN1_TPETRA_RASHO
 ARGS "--M=5 --DIM=2 --O=2 --DPN=1 --PLIST=ParameterLists/ParameterList_OneLevelPreconditioner_rasho.xml --USETPETRA"
 COMM mpi
