@@ -275,7 +275,7 @@ import sys
 if __name__=="__main__":
     export = True
     plot = False
-    tex = True
+    tex = False
     nx, ny, processes = read_meta()
 
     appendix = ""
@@ -285,17 +285,17 @@ if __name__=="__main__":
     print(max_iterations)
     
     if export:
-        field_names = ["rhs", "rhsHarmonic", "w", "res","sol","unique", "XOverlap_", "XOverlap_New","XTmp_","LocalSol","rhsPreSolveTmp_", "multiplicityExtended"]
+        field_names = ["rhs", "rhsHarmonic", "w", "res","sol","unique", "XOverlap_", "XOverlap_New","XTmp_","LocalSol","rhsPreSolveTmp_", "multiplicityExtended", "solution_final", "xExact"]
         field_names_str = re.sub('[^A-Za-z0-9]+', '', str(field_names))
         fname = "out_"+appendix
-        export_vtk(fname, field_names, add_boundary=True, iterations=max_iterations)
+        #export_vtk(fname, field_names, add_boundary=True, iterations=max_iterations)
         export_xdmf(fname, field_names, add_boundary=True, iterations=max_iterations)
 
     if plot:
         markers=["$r$","o","s","$o$"]
-        #vecs = ["ovlp","nonOvlp", "interface"]
+        vecs = ["ovlp","nonOvlp", "interface"]
         #vecs=["overlapping", "interface"]#,"cut"]
-        vecs=["repeated","overlapping", "interface","ovlp"]
+        #vecs=["repeated","overlapping", "interface","ovlp"]
         #vecs=["interface","cut"]
         #vecs=["overlapping", "ovlp", "interface", "repeated"]
         process_list=[4,5,6,7,8]
@@ -315,8 +315,9 @@ if __name__=="__main__":
 
     if tex:
         import matplotlib.patches as patches
-        vecs_old = ["ovlpOld", "innerOld", "interfaceOld", "cutOld", "multipleOld", "cut"]
-        vecs=["repeated","overlapping", "interface","ovlp", "inner", "restrDomain"]+ vecs_old
+        #vecs_old = ["ovlpOld", "innerOld", "interfaceOld", "cutOld", "multipleOld", "cut"]
+        #vecs=["repeated","overlapping", "interface","ovlp", "inner", "restrDomain"]+ vecs_old
+        vecs = ["overlapping", "ovlp", "inner", "interface", "restrDomain"]
         ploty = int(np.sqrt(len(vecs)))
         plotx = int(np.ceil(len(vecs)/ploty))
         process=4
@@ -346,6 +347,8 @@ if __name__=="__main__":
                 wh = np.array(ur)-np.array(ll)
                 rect = patches.Rectangle(ll, wh[0], wh[1], linewidth=1, edgecolor='r', facecolor='none')
                 ax.add_patch(rect)
+                ax.set_xlim(0.2,0.8)
+                ax.set_ylim(0.2,0.8)
                 
                 # if nodes is not None:
                 #     visualizeNodes(grid, nodes, offset=[0,0], s=3**2,c="r", marker="o", alpha=0.7, label="unique")
@@ -353,7 +356,6 @@ if __name__=="__main__":
             except Exception as e:
                 print(e)
                 print(f"Didn't find files for name {name} {process}")
-        
         plt.suptitle("Nodesets "+ appendix)
         tikz_save('NodeSets.tex')
         plt.show()
