@@ -168,6 +168,7 @@ namespace FROSch {
         virtual RCP<MultiVector<int,LO,GO,NO>> calculateInterfaceByMultiplicity();
         virtual RCP<MultiVector<int,LO,GO,NO>> calculateInterfaceByRhsHarmonic();
         RCP<MultiVector<int,LO,GO,NO>> Interfaces_;
+        XMultiVectorPtr RhsHarmonic_;
     };
 
 }
