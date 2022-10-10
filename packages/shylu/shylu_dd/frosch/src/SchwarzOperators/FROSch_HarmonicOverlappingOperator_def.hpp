@@ -276,7 +276,7 @@ namespace FROSch {
                 output(rhsRCP,  "rhs",0);
             }
             rhs.update(-1,*Aw,1);//rhs-A*w
-
+            //TODO: Save RhsHarmonic_
 
             if(OutputMapsAndVectors_){
                 output(rhsRCP, "rhsHarmonic",0);
