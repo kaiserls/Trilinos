@@ -200,12 +200,12 @@ namespace FROSch {
         }
         y.update(alpha,*(this->XTmp_),beta);
         if(OutputMapsAndVectors_){
-        auto rcp_x = RCP<const XMultiVector>(&x, false);
-        auto rcp_y = RCP<const XMultiVector>(&y, false);
-        output(this->XTmp_, "XTmp_", iteration);
-        output(this->YOverlap_, "LocalSol", iteration);
-        output(rcp_x, "res", iteration);
-        output(rcp_y, "sol", iteration);
+            auto rcp_x = RCP<const XMultiVector>(&x, false);
+            auto rcp_y = RCP<const XMultiVector>(&y, false);
+            output(this->XTmp_, "XTmp_", iteration);
+            output(this->YOverlap_, "LocalSol", iteration);
+            output(rcp_x, "res", iteration);
+            output(rcp_y, "sol", iteration);
         }
         iteration++;
     }
@@ -297,6 +297,11 @@ namespace FROSch {
             FROSCH_ASSERT(W_ != null,"Run preSolve before solving the system and running the current function, afterSolve");
             lhs.update(1.,*W_, 1.);//lhs+W_
         }
+
+        if(OutputMapsAndVectors_){
+                RCP<XMultiVector> lhsRCP = RCP<XMultiVector>(&lhs, false);
+                output(lhsRCP, "solution_final",0);
+            }
     }
 
     template <class SC,class LO,class GO,class NO>
