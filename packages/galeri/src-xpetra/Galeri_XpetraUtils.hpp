@@ -133,15 +133,15 @@ namespace Galeri {
         Coord[0] = coordinates->getDataNonConst(0);
         Coord[1] = coordinates->getDataNonConst(1);
 
-        delta_x = lx / Teuchos::as<real_type>(nx - 1);
-        delta_y = ly / Teuchos::as<real_type>(ny - 1);
+        delta_x = lx / Teuchos::as<real_type>(nx + 1);
+        delta_y = ly / Teuchos::as<real_type>(ny + 1);
 
         for (size_t i = 0; i < NumMyElements; ++i) {
           ix = MyGlobalElements[i] % nx;
           iy = (MyGlobalElements[i] - ix) / nx;
 
-          Coord[0][i] = delta_x * Teuchos::as<real_type>(ix);
-          Coord[1][i] = delta_y * Teuchos::as<real_type>(iy);
+          Coord[0][i] = delta_x * (Teuchos::as<real_type>(ix) + 1);
+          Coord[1][i] = delta_y * (Teuchos::as<real_type>(iy) + 1);
         }
 
       } else if (coordType == "3D") {
