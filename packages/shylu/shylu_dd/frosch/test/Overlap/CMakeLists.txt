@@ -1,6 +1,7 @@
 TRIBITS_ADD_EXECUTABLE(
 overlap
 SOURCES main.cpp
+#SOURCES main_fem.cpp
 )
 
 ADD_SUBDIRECTORIES(
@@ -223,16 +224,16 @@ NUM_MPI_PROCS 8
 ## Harmonic
 TRIBITS_ADD_TEST(
 overlap
-NAME test_overlap_Matrix_DIM2_DPN1_TPETRA_CG
-ARGS "--M=5 --DIM=2 --O=2 --DPN=1 --PLIST=ParameterLists/ParameterList_OneLevelPreconditioner_cg.xml --USETPETRA"
+NAME test_overlap_Matrix_DIM2_DPN1_TPETRA_AS
+ARGS "--M=5 --DIM=2 --O=2 --DPN=1 --PLIST=ParameterLists/ParameterList_OneLevelPreconditioner_as.xml --USETPETRA"
 COMM mpi
 NUM_MPI_PROCS 4
 )
 
 TRIBITS_ADD_TEST(
 overlap
-NAME test_overlap_Matrix_DIM2_DPN1_TPETRA_CG_NONREPEATED
-ARGS "--M=5 --DIM=2 --O=2 --DPN=1 --PLIST=ParameterLists/ParameterList_OneLevelPreconditioner_cg_NonRepeated.xml --USETPETRA"
+NAME test_overlap_Matrix_DIM2_DPN1_TPETRA_AS_NONREPEATED
+ARGS "--M=5 --DIM=2 --O=2 --DPN=1 --PLIST=ParameterLists/ParameterList_OneLevelPreconditioner_as_NonRepeated.xml --USETPETRA"
 COMM mpi
 NUM_MPI_PROCS 4
 )
