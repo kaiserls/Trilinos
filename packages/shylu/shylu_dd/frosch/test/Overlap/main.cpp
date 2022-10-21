@@ -426,25 +426,20 @@ int main(int argc, char *argv[])
         Stratimikos::LinearSolverBuilder<SC> linearSolverBuilder;
         Stratimikos::enableFROSch<SC,LO,GO,NO>(linearSolverBuilder);
         linearSolverBuilder.setParameterList(parameterList);
-
-        // Comm->barrier(); if (Comm->getRank()==0) cout << "######################\n# Thyra PrepForSolve #\n######################\n" << endl;
-
+        // Comm->barrier(); if (Comm->getRank()==0) cout << "######################\n# Thyra PrepForSolve #\n######################\n" << endl
         RCP<LinearOpWithSolveFactoryBase<SC> > solverFactory =
         Thyra::createLinearSolveStrategy(linearSolverBuilder);
 
         solverFactory->setOStream(out);
         solverFactory->setVerbLevel(VERB_HIGH);
-
-        // Comm->barrier(); if (Comm->getRank()==0) cout << "###########################\n# Thyra LinearOpWithSolve #\n###########################" << endl;
-
+        // Comm->barrier(); if (Comm->getRank()==0) cout << "###########################\n# Thyra LinearOpWithSolve #\n###########################" << endl
         // preconditioner
         auto precFactory = solverFactory->getPreconditionerFactory();
         RCP<Thyra::PreconditionerBase<SC> > prec = precFactory->createPrec();
         Thyra::initializePrec<SC>(*precFactory, K_thyra, prec.ptr());
         // solver
-        Teuchos::RCP<Thyra::LinearOpWithSolveBase<SC> > solveOp = solverFactory->createOp(); 
-        Thyra::initializePreconditionedOp<SC>(*solverFactory, K_thyra, prec, solveOp.ptr());    
-
+        // Teuchos::RCP<Thyra::LinearOpWithSolveBase<SC> > solveOp = solverFactory->createOp(); 
+        // Thyra::initializePreconditionedOp<double>(*solverFactory, K_thyra, prec, solveOp.ptr());
         // Comm->barrier(); if (Comm->getRank()==0) cout << "###########################\n# Casting #\n###########################" << endl;
         
         //op to FROSch Operator
@@ -458,19 +453,21 @@ int main(int argc, char *argv[])
         SC residualAfterPre=norm(*(thyraBModified->col(0)));
         
         if (Comm->getRank()==0) cout<<"Norm of rhs before: " << residualBeforePre << "; Norm of rhs after preSolve: " <<residualAfterPre << endl;
-        //TODO: How to do this better?
-        // double conv_crit_rel_to_start_res = 1e-6;
-        // double start_res = sqrt(RepeatedMaps[0]->getGlobalNumElements()* 1.*1.) ;//1 because rhs is 1 everywhere
-        // double conv_tol = 1e-6 *  residualBeforePre / residualAfterPre;
-        // sublist(parameterList,"Block GMRES")->set("Convergence Tolerance", conv_tol);
-        // auto solveOpCasted = rcp_dynamic_cast<
-        //                                         Belos::SolverManager<SC, MultiVectorBase<SC>, LinearOpBase<SC>>,
-        //                                         Thyra::LinearOpWithSolveBase<SC>
-        //                                         >(solveOp, true);
-        // solveOpCasted->setParameters(parameterList);
-        // MultiVectorBase<SC>
-        // LinearOpBase<SC>
         
+        double adapt_start = MPI_Wtime();
+        // Adapt convergence tolerance
+        string solverType = sublist(sublist(parameterList,"Linear Solver Types"),"Belos")->get<string>("Solver Type");
+        RCP<ParameterList> krylovList =  sublist(sublist(sublist(sublist(parameterList,"Linear Solver Types"),"Belos"),"Solver Types"),solverType, true);
+        double convergenceTolerance = krylovList->get<double>("Convergence Tolerance");
+        double scaledConvergenceTolerance = convergenceTolerance *  residualBeforePre / residualAfterPre;
+        krylovList->set("Convergence Tolerance", scaledConvergenceTolerance);
+        // Re setup solver
+        linearSolverBuilder.setParameterList(parameterList);
+        solverFactory = Thyra::createLinearSolveStrategy(linearSolverBuilder);
+        Teuchos::RCP<Thyra::LinearOpWithSolveBase<SC> > solveOp = solverFactory->createOp(); 
+        Thyra::initializePreconditionedOp<double>(*solverFactory, K_thyra, prec, solveOp.ptr());
+        double adapt_end = MPI_Wtime();
+        if (Comm->getRank()==0) cout << "The code block for thes caling and setup of solveOp took "<< adapt_end-adapt_start<<"seconds"<<endl;
 
         // Comm->barrier(); if (Comm->getRank()==0) cout << "\n#########\n# Solve #\n#########" << endl;
         SolveStatus<SC> status =
@@ -479,7 +476,6 @@ int main(int argc, char *argv[])
         //Comm->barrier(); if (Comm->getRank()==0) cout << "the error is: - for the new system:" << thyraB->col(0)->norm_1() << " for the olds system " << thyraB->col(0)->norm_1()<<std::endl;
 
         // Comm->barrier(); if (Comm->getRank()==0) cout << "###########################\n# AfterSolve #\n###########################" << endl;
-        //K_thyra->apply(EOpTransp::NOTRANS, *thyraX, thyraBNew.ptr(),1.0,-1.0);
         thyraX = thyraXModified->clone_mv();
         froschLinearOp->afterSolve(thyraX.ptr());
 
@@ -501,8 +497,7 @@ int main(int argc, char *argv[])
         SC errorAfter = norm(*(thyraXExact->col(0)));
 
         Comm->barrier(); if (Comm->getRank()==0) cout << "the absolut residual is: - for the Modified system: "<<residualModifiedSystem << " - for the original system: "<< residualOriginalSystem <<std::endl;
-        Comm->barrier(); if (Comm->getRank()==0) cout << "the absolut error for the original system is: "<< errorAfter << ". Reduced from: " << errorBefore << std::endl;
-        //FROSCH_ASSERT(res)
+        Comm->barrier(); if (Comm->getRank()==0) cout << "the error to the exact solution is: "<< errorAfter << ". Reduced from: " << errorBefore << std::endl;
         Comm->barrier(); if (Comm->getRank()==0) cout << "\n#############\n# Finished! #\n#############" << endl;
     }
     
