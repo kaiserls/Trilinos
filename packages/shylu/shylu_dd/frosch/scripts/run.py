@@ -77,7 +77,7 @@ def main():
 
     Ms = [800]
     Ns = [144]
-    Os = [12]
+    Os = [12,2]
     Modes = ["as", "asho", "asho_onOverlapping", "rasho", "ras"]
     computer = compute(output_path, Ms, Ns, Os, Modes)
 
