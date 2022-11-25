@@ -50,6 +50,9 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+    //! Constructor for the subdomain solver
+    //! Set up of the linear problem and processing of the parameters including selection of the specific solver package
+    //! Construction of a preconditioner if specified???
     template<class SC,class LO,class GO,class NO>
     SubdomainSolver<SC,LO,GO,NO>::SubdomainSolver(ConstXMatrixPtr k,
                                                   ParameterListPtr parameterList,
@@ -398,6 +401,8 @@ namespace FROSch {
         return 0;
     }
 
+    //! Call this after initialize(), solver is ready to be applied afterwards
+    //! Performs the compute step which depends on the choosen solver implementation, i. e. NumericalFactorization
     template<class SC,class LO,class GO,class NO>
     int SubdomainSolver<SC,LO,GO,NO>::compute()
     {
@@ -470,7 +475,8 @@ namespace FROSch {
         return 0;
     }
 
-    // Y = alpha * A^mode * X + beta * Y
+    //! Y = alpha * A^mode * X + beta * Y
+    //! Solve the subdomain problem with rhs x for the lhs y
     template<class SC,class LO,class GO,class NO>
     void SubdomainSolver<SC,LO,GO,NO>::apply(const XMultiVector &x,
                                              XMultiVector &y,

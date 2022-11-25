@@ -97,6 +97,10 @@ SERIAL_DEBUG/
 SERIAL_RELEASE/
 
 /build
+/install/**
+/Testing
+**/doc/
+.vscode
 packages/tpetra/test/MatrixMatrix/matrices/*.m
 
 packages/Sundance/Playa/doc/Doxygen/html/

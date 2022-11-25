@@ -50,8 +50,15 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+    /*
+     * @brief Extracts a locally stored matrix (->with serial communicator) containing the entries from the globalMatrix which belong to the passed map
+     * 
+     * @param globalMatrix The matrix containing the needed entries
+     * @param map The map specifing the entries which should be extracted from the matrix
+     * @return RCP<const Matrix<SC,LO,GO,NO> > The extracted local subdomain matrix
+     */
     template <class SC,class LO,class GO,class NO>
-    RCP<const Matrix<SC,LO,GO,NO> > ExtractLocalSubdomainMatrix(RCP<const Matrix<SC,LO,GO,NO> > globalMatrix,
+    RCP<Matrix<SC,LO,GO,NO> > ExtractLocalSubdomainMatrixNonConst(RCP<const Matrix<SC,LO,GO,NO> > globalMatrix,
                                                                 RCP<const Map<LO,GO,NO> > map)
     {
         FROSCH_DETAILTIMER_START(extractLocalSubdomainMatrixTime,"ExtractLocalSubdomainMatrix");
@@ -83,7 +90,7 @@ namespace FROSch {
             }
         }
         localSubdomainMatrix->fillComplete();
-        return localSubdomainMatrix.getConst();
+        return localSubdomainMatrix;
     }
 
     // this version just read indices without building submatrices, which is done in extractLocalSubdomainMatrix_Symbolic
@@ -240,6 +247,7 @@ namespace FROSch {
         return localSubdomainMatrix.getConst();
     }
 
+    //! Like ExtractLocalSubdomainMatrix(globalMatrix,map), but replaces existing values.
     template <class SC,class LO,class GO,class NO>
     int UpdateLocalSubdomainMatrix(RCP<Matrix<SC,LO,GO,NO> > globalMatrix,
                                    RCP<Map<LO,GO,NO> > &map,
@@ -275,6 +283,8 @@ namespace FROSch {
         return 0;
     }
 
+    //TODO: Builds the submatrices for the inner nodes II, the interface/or outer nodes??? JJ and the "coupling" IJ,JI
+    //TODO: from the global Matrix k and the inner node list indI.
     template <class SC,class LO,class GO,class NO>
     int BuildSubmatrices(RCP<const Matrix<SC,LO,GO,NO> > k,
                          ArrayView<GO> indI,
@@ -529,6 +539,7 @@ namespace FROSch {
     }
 
 
+    //! Like BuildSubmatrices(k,indI,kII,kIJ,kJI,kJJ) but only build the inner node submatrix kII
     template <class SC,class LO,class GO,class NO>
     int BuildSubmatrix(RCP<Matrix<SC,LO,GO,NO> > k,
                        ArrayView<GO> indI,
@@ -569,6 +580,8 @@ namespace FROSch {
         return 0;
     }
 
+    //! Like BuildSubmatrix(RCP<Matrix<SC,LO,GO,NO> > k, ArrayView<GO> indI,RCP<Matrix<SC,LO,GO,NO> > &kII)
+    //! but operating only on a graph.
     template <class LO,class GO,class NO>
     int BuildSubgraph(RCP<CrsGraph<LO,GO,NO> > k,
                       ArrayView<GO> indI,
@@ -604,6 +617,13 @@ namespace FROSch {
         kII->fillComplete(mapI,mapI);
 
         return 0;
+    }
+
+    template <class SC,class LO,class GO,class NO>
+    RCP<const Matrix<SC,LO,GO,NO> > ExtractLocalSubdomainMatrix(RCP<const Matrix<SC,LO,GO,NO> > globalMatrix,
+                                                                RCP<const Map<LO,GO,NO> > map)
+    {
+        return ExtractLocalSubdomainMatrixNonConst(globalMatrix, map).getConst();
     }
 }
 

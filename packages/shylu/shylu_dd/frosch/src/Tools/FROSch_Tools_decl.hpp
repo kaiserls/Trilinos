@@ -58,6 +58,9 @@
 #include <Xpetra_VectorFactory.hpp>
 #include <Xpetra_ExportFactory.hpp>
 
+#include <Thyra_MultiVectorBase_decl.hpp>
+#include <Thyra_TpetraThyraWrappers.hpp>
+
 #ifdef HAVE_SHYLU_DDFROSCH_ZOLTAN2
 #include <Zoltan2_MatrixAdapter.hpp>
 #include <Zoltan2_XpetraCrsMatrixAdapter.hpp>
@@ -337,6 +340,9 @@ namespace FROSch {
                                                         unsigned dofsPerNode,
                                                         ArrayRCP<RCP<const Map<LO,GO,NO> > > dofsMaps,
                                                         RCP<const MultiVector<SC,LO,GO,NO> > nodeList = null);
+
+    template <class SC, class LO, class GO, class NO>
+    const RCP<MultiVector<SC,LO,GO,NO>> toXpetra(const Ptr<Thyra::MultiVectorBase<SC>> &X_in);
 
 #ifdef HAVE_SHYLU_DDFROSCH_EPETRA
     template <class SC,class LO,class GO,class NO>

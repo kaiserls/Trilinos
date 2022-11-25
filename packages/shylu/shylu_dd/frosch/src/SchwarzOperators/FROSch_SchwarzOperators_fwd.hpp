@@ -60,6 +60,12 @@ namespace FROSch {
               class LO,
               class GO,
               class NO>
+    class CombinedOperator;
+
+    template <class SC,
+              class LO,
+              class GO,
+              class NO>
     class GDSWCoarseOperator;
 
     template <class SC,

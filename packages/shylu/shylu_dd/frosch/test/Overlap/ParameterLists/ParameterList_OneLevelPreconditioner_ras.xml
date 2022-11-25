@@ -7,8 +7,10 @@
                 <ParameterList name="Block GMRES">
                     <Parameter name="PreconditionerPosition" type="string" value="left"/>
                     <Parameter name="Block Size" type="int" value="1"/>
-                    <Parameter name="Convergence Tolerance" type="double" value="1e-4"/>
-                    <Parameter name="Maximum Iterations" type="int" value="100"/>
+                    <Parameter name="Convergence Tolerance" type="double" value="1e-6"/>
+                    <!-- <Parameter name="Implicit Residual Scaling" type="string" value="None"/> -->
+                    <!-- <Parameter name="Explizit Residual Scaling" type="string" value="None"/> -->
+                    <Parameter name="Maximum Iterations" type="int" value="1000"/>
                     <Parameter name="Output Frequency" type="int" value="1"/>
                     <Parameter name="Show Maximum Residual Norm Only" type="bool" value="1"/>
                 </ParameterList>
@@ -20,9 +22,9 @@
         <ParameterList name="FROSch">
             <Parameter name="FROSch Preconditioner Type"                        type="string"   value="OneLevelPreconditioner"/>
             
-            <Parameter name="OverlappingOperator Type"                          type="string"   value="AlgebraicOverlappingOperator"/>
+            <Parameter name="OverlappingOperator Type"                          type="string"   value="HarmonicOverlappingOperator"/>
             
-            <ParameterList name="AlgebraicOverlappingOperator">
+            <ParameterList name="HarmonicOverlappingOperator">
                 <Parameter name="Adding Layers Strategy"                        type="string"   value="CrsGraph"/>
                 <Parameter name="Combine Values in Overlap"                     type="string" value="Restricted"/><!--Restricted,Averaging,Full-->
                 <Parameter name="HarmonicOnOverlap"                             type="bool"   value="0"/>

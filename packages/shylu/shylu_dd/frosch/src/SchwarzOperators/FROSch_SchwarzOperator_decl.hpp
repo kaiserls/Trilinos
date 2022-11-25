@@ -72,6 +72,8 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
+
+    //! Base class for a SchwarzOperator P_i which can be combined via SumOperator or MultiplicativeOperator to a SchwarzPreconditioner
     template <class SC = double,
               class LO = int,
               class GO = DefaultGlobalOrdinal,
@@ -181,13 +183,19 @@ namespace FROSch {
 
         SchwarzOperator(CommPtr comm);
 
+        //! Constructor for the SchwarzOperator with the global matrix k
+        //! and a parameterlist containing parameters for the complete preconditioner.
         SchwarzOperator(ConstXMatrixPtr k,
                         ParameterListPtr parameterList);
 
         virtual ~SchwarzOperator();
+        //! Do the work which only has to be done once if the Graph of K_ doesnt change.
+        //! Compute needs to be called before the operator can be apllied.
 
         virtual int initialize() = 0;
 
+        //! Do the work which has to be done only once if the values in the matrix K_ dont change.
+        //! The operator can be applied after this step.
         virtual int compute() = 0;
 
         // Y = alpha * A^mode * X + beta * Y
@@ -197,6 +205,18 @@ namespace FROSch {
                            SC alpha=ScalarTraits<SC>::one(),
                            SC beta=ScalarTraits<SC>::zero()) const;
 
+        //TODO: Complete this
+        /**
+         * @brief Apply the SchwarzOperator on the Vector x and store the result in y.
+         * Y = alpha * A^mode * X + beta * Y
+         * 
+         * @param x Typically the residuum in a preconditioned solver or the solution in a fixpoint iteration.
+         * @param y The result of the operation
+         * @param usePreconditionerOnly ???
+         * @param mode Typically ???
+         * @param alpha Typically ???
+         * @param beta Typically ???
+         */
         virtual void apply(const XMultiVector &x,
                            XMultiVector &y,
                            bool usePreconditionerOnly,
@@ -204,6 +224,9 @@ namespace FROSch {
                            SC alpha=ScalarTraits<SC>::one(),
                            SC beta=ScalarTraits<SC>::zero()) const = 0;
 
+        virtual void preSolve(XMultiVector & rhs);
+        virtual void afterSolve(XMultiVector & lhs);
+        
         virtual ConstXMapPtr getDomainMap() const;
 
         virtual ConstXMapPtr getRangeMap() const;
@@ -217,8 +240,14 @@ namespace FROSch {
 
         bool isComputed() const;
 
+        //TODO: Correct comment
+        //! Set a new Matrix for the operator with new values and possibly a new graph structure.
+        //! The compute method has to be called again to use the operator based on the new matrix???
+        //! If the structure of the matrix changed ???
         int resetMatrix(ConstXMatrixPtr &k);
 
+        //TODO: Local or global residual?
+        //! Calculates the residual between the solution x and the right hand side b and stores the result in the R. 
         virtual void residual(const XMultiVector & X,
                               const XMultiVector & B,
                               XMultiVector& R) const;
@@ -228,7 +257,7 @@ namespace FROSch {
         CommPtr MpiComm_;
         CommPtr SerialComm_ = createSerialComm<int>();
 
-        ConstXMatrixPtr K_;
+        ConstXMatrixPtr K_; //! Matrix of the full problem to be solved
 
         ParameterListPtr ParameterList_;
 
@@ -239,10 +268,10 @@ namespace FROSch {
 
         bool Verbose_ = false;
 
-        bool IsInitialized_ = false;
-        bool IsComputed_ = false;
+        bool IsInitialized_ = false; //!Preconditioner can be computed for matrices with different values in already fixed entries.
+        bool IsComputed_ = false; //! Preconditioner can be used now.
 
-        ConstUN LevelID_ = 1;
+        ConstUN LevelID_ = 1;   //TODO: //! ??? Possible values and meaning...
     };
 
 }

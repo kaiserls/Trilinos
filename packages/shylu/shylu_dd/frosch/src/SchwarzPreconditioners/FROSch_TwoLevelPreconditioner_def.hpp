@@ -57,6 +57,7 @@ namespace FROSch {
     OneLevelPreconditioner<SC,LO,GO,NO> (k,parameterList)
     {
         FROSCH_DETAILTIMER_START_LEVELID(twoLevelPreconditionerTime,"TwoLevelPreconditioner::TwoLevelPreconditioner::");
+        // Construct the coarse operator based on the value passed through the parameter list.
         if (!this->ParameterList_->get("CoarseOperator Type","IPOUHarmonicCoarseOperator").compare("IPOUHarmonicCoarseOperator")) {
             // Set the LevelID in the sublist
             parameterList->sublist("IPOUHarmonicCoarseOperator").set("Level ID",this->LevelID_);
@@ -72,12 +73,8 @@ namespace FROSch {
         } else {
             FROSCH_ASSERT(false,"CoarseOperator Type unkown.");
         } // TODO: Add ability to disable individual levels
-        if (this->UseMultiplicative_) {
-            this->MultiplicativeOperator_->addOperator(CoarseOperator_);
-        }
-        else{
-            this->SumOperator_->addOperator(CoarseOperator_);
-        }
+        // Add Coarse operator to the combined operator, the overlapping operator is added in the base class (oneLevel) constructor
+        this->CombinedOperator_->addOperator(CoarseOperator_);
     }
 
     template <class SC,class LO,class GO,class NO>
@@ -222,6 +219,7 @@ namespace FROSch {
         return ret;
     }
 
+    //! Computes overlapping and coarse operator
     template <class SC,class LO,class GO,class NO>
     int TwoLevelPreconditioner<SC,LO,GO,NO>::compute()
     {
@@ -250,9 +248,7 @@ namespace FROSch {
     {
         FROSCH_DETAILTIMER_START_LEVELID(resetMatrixTime,"TwoLevelPreconditioner::resetMatrix");
         this->K_ = k;
-        this->OverlappingOperator_->resetMatrix(this->K_);
-        CoarseOperator_->resetMatrix(this->K_);
-        if (this->UseMultiplicative_) this->MultiplicativeOperator_->resetMatrix(this->K_);
+        this->CombinedOperator_->resetMatrix(this->K_);
         return 0;
     }
 }
