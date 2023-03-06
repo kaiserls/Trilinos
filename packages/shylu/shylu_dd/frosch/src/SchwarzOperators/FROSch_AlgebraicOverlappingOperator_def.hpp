@@ -133,7 +133,7 @@ namespace FROSch {
         }
 
         if (repeatedMap.is_null()) repeatedMap = this->K_->getRangeMap();
-        if (this->ParameterList_->get("Fake Geometric Overlap", true)) {
+        if (this->ParameterList_->get("Build Overlap From Row Map", true)) {
             this->buildOverlappingMatrices(overlap,repeatedMap);
         } else {
             this->buildOverlappingMatrices(overlap,this->K_->getRowMap());
