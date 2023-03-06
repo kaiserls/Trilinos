@@ -32,7 +32,6 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR})
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/CoarseSpaces)
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/InterfaceSets)
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/Mapping)
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/SchwarzOperators)
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/SchwarzPreconditioners)
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/SolverInterfaces)
@@ -86,8 +85,6 @@ APPEND_SET(HEADERS
   InterfaceSets/FROSch_EntitySet_def.hpp
   InterfaceSets/FROSch_InterfaceEntity_decl.hpp
   InterfaceSets/FROSch_InterfaceEntity_def.hpp
-  Mapping/FROSch_Mapper_decl.hpp
-  Mapping/FROSch_Mapper_def.hpp
   SchwarzOperators/FROSch_AlgebraicOverlappingOperator_decl.hpp
   SchwarzOperators/FROSch_AlgebraicOverlappingOperator_def.hpp
   SchwarzOperators/FROSch_CoarseOperator_decl.hpp
@@ -155,6 +152,8 @@ APPEND_SET(HEADERS
   Tools/FROSch_Debugging.hpp
   Tools/FROSch_ExtractSubmatrices_decl.hpp
   Tools/FROSch_ExtractSubmatrices_def.hpp
+  Tools/FROSch_Mapper_decl.hpp
+  Tools/FROSch_Mapper_def.hpp
   Tools/FROSch_Output.h
   Tools/FROSch_SubdomainSolver_decl.hpp
   Tools/FROSch_SubdomainSolver_def.hpp
