@@ -56,8 +56,8 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
-    // TODO: Comment
-    //! Calculates and stores the assembled basis functions and corresponding maps of a CoarseSpace
+    //! Assembles the basis functions stored as multi-vectors on different processors into a single multi-vector,which corresponds to the coarse space, on the root processor.
+    //! Builds the correspondings maps and provides a matrix which contains the coarse basis functions.
     template <class SC = double,
               class LO = int,
               class GO = DefaultGlobalOrdinal,

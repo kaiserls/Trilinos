@@ -50,8 +50,8 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
-    //! This class represents a decomposition of unity into piecewiese constant functions
-    //! It is one inside the "owned" domain part and zero outside
+    //! This class represents a decomposition of unity into piecewiese constant functions.
+    //! The functions are one inside the interior of the subdomains (corresponding to a unique decomposition) and zero outside.
     template <class SC = double,
               class LO = int,
               class GO = DefaultGlobalOrdinal,

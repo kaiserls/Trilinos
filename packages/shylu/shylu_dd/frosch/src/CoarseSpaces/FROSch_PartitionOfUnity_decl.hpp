@@ -50,7 +50,7 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
-    //! Abstract base class which represents a partition of unity over a certain domain
+    //! Abstract base class which represents a partition of unity
     template <class SC = double,
               class LO = int,
               class GO = DefaultGlobalOrdinal,

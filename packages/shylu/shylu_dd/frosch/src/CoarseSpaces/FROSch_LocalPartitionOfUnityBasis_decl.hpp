@@ -56,10 +56,8 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
-    //TODO: Correct
-    //! This class constructs the coarse space (basis) for an arbitrary (pde) problem from an arbitrary partition of unity
-    //! The coarse space then contains at least the functions included in the kernel of the (pde) problem
-    // (Maybe only on nonoverlapping/interface)
+    //! This class constructs the coarse space (basis) for a (pde) problem from the null space vector.
+    //! Basically, this is achieved by multiply each null space vector with each partition of unity function.
     template <class SC = double,
               class LO = int,
               class GO = DefaultGlobalOrdinal,
