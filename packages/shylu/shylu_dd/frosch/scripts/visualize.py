@@ -14,39 +14,45 @@ import meshio
 from tikzplotlib import save as tikz_save
 
 ########################################################################### Read files written out by the c++ code
-# number of nodes nx,ny in the grid and number of processes used for the decomposition
 def read_meta():
+    """Load the meta data (nx, ny, processes) from the meta.txt file."""
     meta = np.loadtxt("meta.txt", dtype="int")
     nx, ny, processes = meta
     return nx, ny, processes
 
-# recreate the appendix of the filenames:
-# - name (of the map/vector)
-# - number of the output process
-# - optional: iteration count
 def get_appendix(process, name, iteration=None):
+    """Create the filename appendix for the given parameters.
+
+    Args:
+        process (int): The number of the output process.
+        name (str): The name of the map/vector.
+        iteration (int, optional): The iteration count. Defaults to None.
+
+    Returns:
+        _type_: _description_
+    """
     name = "_"+name if name!="" else ""
     part = "_p" + str(process)
     if iteration is not None:
         part = part + "_it"+"{:04d}".format(iteration)
     return name+part+".txt"
 
-# Read a set of nodes (xpetra map on one process)
 def nodes_from_txt(process, name, iteration=None):
+    """Read a set of nodes from a file, which contains the xpetra map on one process."""
     appendix = get_appendix(process, name, iteration)
     fname = "nodes"+appendix
     nodes =  np.loadtxt(fname, dtype='int')
     return nodes
 
-# Read a set of values
 def values_from_txt(process, name, iteration=None):
+    """Read a set of values from a file, which contains the xpetra vector on one process."""
     appendix = get_appendix(process, name, iteration)
     fname = "values"+appendix
     values = np.loadtxt(fname, dtype="double")
     return values
 
-# Read a set of nodes and values (xpetra vector on one process)
 def nodes_and_values_from_txt(process, name="", iteration=None):
+    """Read a set of nodes and values from a file, which contains the xpetra vector on one process."""
     try:
         appendix = get_appendix(process, name, iteration)
         nodes =  np.loadtxt("nodes"+appendix, dtype='int')
@@ -59,6 +65,7 @@ def nodes_and_values_from_txt(process, name="", iteration=None):
 
 ########################################################################### Grid functions
 def generate_grid(nx,ny):
+    """Generate a uniform grid of size nx*ny."""
     x = np.linspace(0,1,nx)
     y = np.linspace(0,1,ny) 
     xx, yy = np.meshgrid(x,y)
@@ -67,23 +74,22 @@ def generate_grid(nx,ny):
     return x, y, xx, yy
 
 def quad_connectivity(i, j, nx, ny):
-        return [
-            i + j * (nx + 1),
-            i + 1 + j * (nx + 1),
-            i + 1 + (j + 1) * (nx + 1),
-            i + (j + 1) * (nx + 1),
-        ]
-# prolongation and boundary
-def owned_nodes_mask(owned_nodes, size_full):
-    mask = np.ones(size_full, dtype=bool)
-    mask[owned_nodes]=False
+    """Generate the connectivity for a quad element with index (i, j) in a uniform grid of size nx*ny."""
+    return [
+        i + j * (nx + 1),
+        i + 1 + j * (nx + 1),
+        i + 1 + (j + 1) * (nx + 1),
+        i + (j + 1) * (nx + 1),
+    ]
 
 def prolongate(GOs, values,ntot):
+    """Prolongate a vector with the given global indices and values to a vector of size ntot."""
     values_full = np.zeros(ntot)
     values_full[GOs]=values
     return values_full
 
 def add_boundar_to_extended(GOs, values, nx, ny):
+    """Add a boundary to a vector with the given global indices and values. Only works for a uniform grid of size nx*ny."""
     values_with_boundary = np.zeros((nx+2)*(ny+2))
     for go in GOs:
         i = go%nx
@@ -93,6 +99,8 @@ def add_boundar_to_extended(GOs, values, nx, ny):
 
 ########################################################################### export
 def append_to_data_set(data_set, processes, name, iteration, preprocessor=lambda nodes, values: values):
+    """Reads the nodes and values for a field with the given name and the given iteration count, and saves them to the data_set.
+    The data is preprocessed by the given preprocessor function, which is applied to the nodes and values of each process."""
     values_extended_list = []
     for process in range(0, processes):
         nodes, values = nodes_and_values_from_txt(process,name, iteration)
@@ -101,8 +109,8 @@ def append_to_data_set(data_set, processes, name, iteration, preprocessor=lambda
         data_set[name+str(process)]= values_extended
     data_set[name]=np.sum(values_extended_list,axis=0)
 
-# Prolongates local vector to full domain, eventually adds boundary and optionally applies a custom function to the result
 def get_preprocessor(nx, ny, add_boundary, custom_func=None):
+    """Returns a preprocessor function, which can be used to prolongate a vector to the full domain, eventually add a boundary and apply a custom function to the result."""
     if add_boundary:
             pre = lambda nodes, values : add_boundar_to_extended(nodes, prolongate(nodes, values, nx*ny), nx, ny)
     else:
@@ -114,8 +122,8 @@ def get_preprocessor(nx, ny, add_boundary, custom_func=None):
         preprocessor = lambda nodes, values: custom_func(pre(nodes, values))
     return preprocessor
 
-# Reads the nodes and values for a list of field names, and up to the iteration count and saved them to a file named fname
 def export_vtk(fname, field_names, add_boundary=True, iterations=1):
+    """Reads the nodes and values for a list of field names, and up to the iteration count and saved them to a file named fname in vtk format."""
     nx,ny,processes = read_meta()
     nb = 2 if add_boundary else 0
     mx=nx+nb
@@ -151,6 +159,7 @@ def export_vtk(fname, field_names, add_boundary=True, iterations=1):
         mesh.write(fname+"_"+"{:04d}".format(it)+".vtk")
 
 def export_xdmf(fname, field_names, add_boundary=True, iterations=1):
+    """Reads the nodes and values for a list of field names, and up to the iteration count and saved them to a file named fname in xdmf format."""
     nx,ny,processes = read_meta()
     nb = 2 if add_boundary else 0
     mx=nx+nb
@@ -182,13 +191,13 @@ def export_xdmf(fname, field_names, add_boundary=True, iterations=1):
             writer.write_data(it, point_data=point_data)
 
 ########################################################################### Visualization with matplotlib
-# Visualizes a xpetra map by showing a scatter plot of the nodes
 def visualizeNodes(grid, GOs: np.array, offset=np.array([0,0]), s=None, c=None, marker=None,label=None, alpha=0.3):
+    """Visualizes a xpetra map by showing a scatter plot of the nodes."""
     xx, yy = grid
     plt.scatter(xx[GOs]+offset[0],yy[GOs]+offset[1], s,c,marker, alpha=alpha, label=label)
 
-# Visualies the values of a xpetra vector by plotting the values next to the corresponding nodes of the map
 def visualizeValues(grid,GOs: np.array, values: np.array, color="black"):
+    """Visualizes the values of a xpetra vector by plotting the values next to the corresponding nodes of the map."""
     # sanitize
     eps = 1e-8
     values_zeroed = np.where(np.abs(values)<eps, 0, values)
@@ -198,8 +207,8 @@ def visualizeValues(grid,GOs: np.array, values: np.array, color="black"):
         plt.text(x, y, f'{values_zeroed[i]:.2}', color=color, fontsize=10)
         i=i+1
 
-# 
 def visualizeMap(name:str, size=None, color=None, marker:str=None, offset=None, process_list=None, alpha=None, showValues=False, it=None):
+    """Visualizes a xpetra map by showing a scatter plot of the nodes and the values of a xpetra vector next to the nodes."""
     nx, ny, processes = read_meta()
     if process_list is None:
         process_list = range(0,processes)
@@ -259,6 +268,7 @@ def visualizeMap(name:str, size=None, color=None, marker:str=None, offset=None, 
 
 ################################################################################## Main part
 def get_max_iterations():
+    """Returns the maximum iteration number of the current run by looking at the files in the current directory."""
     files = [f for f in os.listdir('.') if os.path.isfile(f) and f.endswith(".txt")]
     max = 0
     for f in files:
