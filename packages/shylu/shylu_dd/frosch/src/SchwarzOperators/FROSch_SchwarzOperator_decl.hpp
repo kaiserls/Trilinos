@@ -73,7 +73,7 @@ namespace FROSch {
     using namespace Xpetra;
 
 
-    //! Base class for a SchwarzOperator P_i which can be combined via SumOperator or MultiplicativeOperator to a SchwarzPreconditioner
+    //! Base class for a SchwarzOperator P_i
     template <class SC = double,
               class LO = int,
               class GO = DefaultGlobalOrdinal,
@@ -184,14 +184,14 @@ namespace FROSch {
         SchwarzOperator(CommPtr comm);
 
         //! Constructor for the SchwarzOperator with the global matrix k
-        //! and a parameterlist containing parameters for the complete preconditioner.
+        //! and a parameterlist.
         SchwarzOperator(ConstXMatrixPtr k,
                         ParameterListPtr parameterList);
 
         virtual ~SchwarzOperator();
-        //! Do the work which only has to be done once if the Graph of K_ doesnt change.
-        //! Compute needs to be called before the operator can be apllied.
 
+        //! Do the work which only has to be done once if the Graph of K_ doesn't change.
+        //! Compute needs to be called before the operator can be applied.
         virtual int initialize() = 0;
 
         //! Do the work which has to be done only once if the values in the matrix K_ dont change.
@@ -205,17 +205,16 @@ namespace FROSch {
                            SC alpha=ScalarTraits<SC>::one(),
                            SC beta=ScalarTraits<SC>::zero()) const;
 
-        //TODO: Complete this
         /**
          * @brief Apply the SchwarzOperator on the Vector x and store the result in y.
          * Y = alpha * A^mode * X + beta * Y
          * 
          * @param x Typically the residuum in a preconditioned solver or the solution in a fixpoint iteration.
          * @param y The result of the operation
-         * @param usePreconditionerOnly ???
-         * @param mode Typically ???
-         * @param alpha Typically ???
-         * @param beta Typically ???
+         * @param usePreconditionerOnly If true, only the preconditioner is applied, otherwise the complete operator.
+         * @param mode Transpose mode for the application to the operator object A.
+         * @param alpha multiplicator for the right hand side argument x, defaults to one.
+         * @param beta multiplicator for the previous state of the result vector y, defaults to zero.
          */
         virtual void apply(const XMultiVector &x,
                            XMultiVector &y,
@@ -240,14 +239,11 @@ namespace FROSch {
 
         bool isComputed() const;
 
-        //TODO: Correct comment
-        //! Set a new Matrix for the operator with new values and possibly a new graph structure.
-        //! The compute method has to be called again to use the operator based on the new matrix???
-        //! If the structure of the matrix changed ???
+        //! Sets a new matrix for the operator.
+        //! Call initialize() and compute() again to use the new matrix, depending on what changed in the matrix.
         int resetMatrix(ConstXMatrixPtr &k);
 
-        //TODO: Local or global residual?
-        //! Calculates the residual between the solution x and the right hand side b and stores the result in the R. 
+        //! Calculates the global residual between the solution X and the right hand side B and stores the result in the residual vector R. 
         virtual void residual(const XMultiVector & X,
                               const XMultiVector & B,
                               XMultiVector& R) const;
@@ -271,7 +267,7 @@ namespace FROSch {
         bool IsInitialized_ = false; //!Preconditioner can be computed for matrices with different values in already fixed entries.
         bool IsComputed_ = false; //! Preconditioner can be used now.
 
-        ConstUN LevelID_ = 1;   //TODO: //! ??? Possible values and meaning...
+        ConstUN LevelID_ = 1;   //! LevelID of the current level in a multilevel implementation.
     };
 
 }

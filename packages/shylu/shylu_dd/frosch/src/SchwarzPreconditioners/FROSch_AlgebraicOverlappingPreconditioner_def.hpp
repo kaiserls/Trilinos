@@ -63,6 +63,7 @@ namespace FROSch {
         // Set the LevelID in the sublist
         parameterList->sublist("AlgebraicOverlappingOperator").set("Level ID",this->LevelID_);
         bool HarmonicOnOverlap = sublist(parameterList,"HarmonicOverlappingOperator")->get("HarmonicOnOverlap",false);
+        //TODO: Use a factory pattern here
         if(HarmonicOnOverlap){
             OverlappingOperator_.reset(new HarmonicOverlappingOperator<SC,LO,GO,NO>(k,sublist(parameterList,"HarmonicOverlappingOperator")));
         }else{

@@ -51,7 +51,8 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
-    //TODO: Explain class + difference to non block version
+    //! A class for two-level block preconditioners.
+    //! Used for block systems with multiple variables, e. g. Stokes.
     template <class SC = double,
               class LO = int,
               class GO = DefaultGlobalOrdinal,

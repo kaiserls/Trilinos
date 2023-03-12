@@ -57,7 +57,7 @@ namespace FROSch {
      * @brief Construct a new Algebraic Overlapping Operator object
      * 
      * @param k Pointer to the matrix of the global problem
-     * @param parameterList Link to the parameterlist storing parameters for the complete preconditioner
+     * @param parameterList Link to the parameterlist
      */
     template <class SC,class LO,class GO,class NO>
     AlgebraicOverlappingOperator<SC,LO,GO,NO>::AlgebraicOverlappingOperator(ConstXMatrixPtr k,
@@ -152,8 +152,6 @@ namespace FROSch {
         return 0; // RETURN VALUE!!!
     }
 
-    //! Prepares the operator to be used, call this after initialize.
-    //! Calls computeOverlappingOperator
     template <class SC,class LO,class GO,class NO>
     int AlgebraicOverlappingOperator<SC,LO,GO,NO>::compute()
     {

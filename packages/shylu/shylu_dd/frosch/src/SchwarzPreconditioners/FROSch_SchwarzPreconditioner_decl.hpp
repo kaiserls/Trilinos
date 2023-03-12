@@ -124,7 +124,14 @@ namespace FROSch {
 
         virtual int compute() = 0;
 
+        //! The preSolve function can be used to adapt the linear system before the solve step. 
+        //! Some preconditioners need this step in order to be applicable in the solve step.
+        //! The default implementation in this class does nothing, but is possibly overwritten in the subclasses.
         virtual void preSolve(XMultiVector & rhs);
+
+        //! Call this function after the solve step to obtain the solution to the original system.
+        //! This only makes sense if the preSolve function has been used to adapt the linear system before the solve step.
+        //! The default implementation in this class does nothing, but is possibly overwritten in the subclasses.
         virtual void afterSolve(XMultiVector & lhs);
 
         // Y = alpha * A^mode * X + beta * Y
@@ -156,12 +163,12 @@ namespace FROSch {
 
         ParameterListPtr ParameterList_;
 
-        bool UseTranspose_ = false;//TODO: Comment
+        bool UseTranspose_ = false;
         bool IsInitialized_ = false;
         bool IsComputed_ = false;
         bool Verbose_ = false;
 
-        ConstUN LevelID_ = 1;//TODO: Comment
+        ConstUN LevelID_ = 1;
     };
 
 }

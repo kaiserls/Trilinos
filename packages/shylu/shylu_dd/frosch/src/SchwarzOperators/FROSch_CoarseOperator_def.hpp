@@ -117,8 +117,8 @@ namespace FROSch {
         return 0;
     }
 
-    //TODO: Comment correct?
-    // Deletes all coarse basis functions and maps. The operator has to be recomputed ???(computed/initialized is untouched?)
+    //! Deletes all coarse basis functions and maps.
+    //! This function is called by compute() before recalculating the operator, if reuseCoarseBasis is explicitly set to false in the parameter list.
     template <class SC,class LO,class GO,class NO>
     int CoarseOperator<SC,LO,GO,NO>::clearCoarseSpace()
     {
