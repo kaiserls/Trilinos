@@ -210,6 +210,14 @@ namespace FROSch {
         return;
     }
 
+    /*
+     * @brief Extracts a locally stored matrix (->with serial communicator) containing the entries from the globalMatrix which belong to the passed map and replaces the values of the entries with the passed value.
+     * 
+     * @param globalMatrix The matrix containing the needed entries
+     * @param map The map specifing the entries which should be extracted from the matrix
+     * @param value The value which should be set for the extracted entries
+     * @return RCP<const Matrix<SC,LO,GO,NO> > The extracted local subdomain matrix
+     */
     template <class SC,class LO,class GO,class NO>
     RCP<const Matrix<SC,LO,GO,NO> > ExtractLocalSubdomainMatrix(RCP<const Matrix<SC,LO,GO,NO> > globalMatrix,
                                                                 RCP<const Map<LO,GO,NO> > map,
@@ -247,7 +255,14 @@ namespace FROSch {
         return localSubdomainMatrix.getConst();
     }
 
-    //! Like ExtractLocalSubdomainMatrix(globalMatrix,map), but replaces existing values.
+    /**
+     * @brief Updates the values of the localSubdomainMatrix with the values of the globalMatrix.
+     * 
+     * @param globalMatrix matrix containing the values which will be used to update the localSubdomainMatrix
+     * @param map map specifing the entries which should be updated
+     * @param localSubdomainMatrix matrix containing the entries which should be updated
+     * @return int 0 if everything went fine
+     */
     template <class SC,class LO,class GO,class NO>
     int UpdateLocalSubdomainMatrix(RCP<Matrix<SC,LO,GO,NO> > globalMatrix,
                                    RCP<Map<LO,GO,NO> > &map,
@@ -283,8 +298,17 @@ namespace FROSch {
         return 0;
     }
 
-    //TODO: Builds the submatrices for the inner nodes II, the interface/or outer nodes??? JJ and the "coupling" IJ,JI
-    //TODO: from the global Matrix k and the inner node list indI.
+    /**
+     * @brief Builds the submatrices for the interior degrees of freedom II, the interface  JJ and the "coupling" IJ,JI from the global Matrix k and the interior degrees of freedom array indI.
+     * 
+     * @param k the global matrix
+     * @param indI the array containing the indices of the interior degrees of freedom
+     * @param kII reference to the submatrix for the interior degrees of freedom
+     * @param kIJ reference to the submatrix for the coupling between the interior and the interface degrees of freedom
+     * @param kJI reference to the submatrix for the coupling between the interface and the interior degrees of freedom
+     * @param kJJ reference to the submatrix for the interface degrees of freedom
+     * @return int 0 if everything went fine
+     */
     template <class SC,class LO,class GO,class NO>
     int BuildSubmatrices(RCP<const Matrix<SC,LO,GO,NO> > k,
                          ArrayView<GO> indI,

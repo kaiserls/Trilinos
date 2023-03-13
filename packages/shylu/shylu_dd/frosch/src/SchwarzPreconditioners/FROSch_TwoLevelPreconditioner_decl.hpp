@@ -51,8 +51,7 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
-    //! The TwoLevelPreconditioner class represents a schwarz preconditioner with two levels, a fine and an additional coarse level.
-    //! It is an extension of an oneLevelPreconditioner and has an additional CoarseOperator which corresponds to the second level.
+    //! The TwoLevelPreconditioner class represents a schwarz preconditioner with two levels. The first level is the fine, and and the second the coarse level.
     template <class SC = double,
               class LO = int,
               class GO = DefaultGlobalOrdinal,

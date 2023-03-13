@@ -886,14 +886,13 @@ namespace FROSch {
     }
     */
 
-    //TODO: Comment/Correct doc comment
     /**
      * @brief All nodes adjacent to the ones in the inputMap are recognized by inspecting the inputMatrix values.
      *  They are added to the outputMap together with all nodes currently in the inputMap
      * 
-     * @param inputMatrix ??? matrix distributed according to the current subdomain and therefore the input map
-     * @param inputMap map defining the current subdomain
-     * @param outputMatrix ??? Difference to inputMatrix?
+     * @param inputMatrix matrix providing the information about adjacent nodes
+     * @param inputMap map defining the starting subdomain
+     * @param outputMatrix matrix distributed according to the new outputMap
      * @param outputMap map defining the new subdomain with one new layer over overlapping elements/nodes
      * @return int 0 if successful
      * \remarks The outputMap is ordered when using this method (the old implementation). This leads to a speedup for some solvers.
@@ -1515,7 +1514,7 @@ namespace FROSch {
         v.erase(unique(v.begin(),v.end()),v.end());
     }
 
-    //! Modified gram schmidt procedure on the vectors of the multivector. zero contains the indices for linear dependent vectors which are zero after gram schmidt.
+    //! Modified Gram-Schmidt procedure on the vectors of the multivector. zero contains the indices for linear dependent vectors which are zero after Gram-Schmidt.
     template <class SC, class LO,class GO,class NO>
     RCP<MultiVector<SC,LO,GO,NO> > ModifiedGramSchmidt(RCP<const MultiVector<SC,LO,GO,NO> > multiVector,
                                                        ArrayView<unsigned> zero)
