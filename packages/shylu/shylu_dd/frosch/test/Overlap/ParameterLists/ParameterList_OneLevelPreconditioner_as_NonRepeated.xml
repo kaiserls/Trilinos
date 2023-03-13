@@ -26,7 +26,7 @@
             <Parameter name="OverlappingOperator Type"                          type="string"   value="HarmonicOverlappingOperator"/>
             
             <ParameterList name="HarmonicOverlappingOperator">
-                <Parameter name="Build Overlap From Row Map"                        type="bool"     value="0"/>
+                <Parameter name="Build Overlap From Row Map"                        type="bool"     value="1"/>
                 <Parameter name="Combine Values in Overlap"                     type="string" value="Full"/><!--Restricted,Averaging,Full-->
                 <Parameter name="HarmonicOnOverlap"                             type="bool"   value="0"/>
                 <Parameter name="Adding Layers Strategy"                        type="string"   value="CrsMatrix"/>

@@ -26,9 +26,9 @@
             <Parameter name="OverlappingOperator Type"                          type="string"   value="HarmonicOverlappingOperator"/>
             
             <ParameterList name="HarmonicOverlappingOperator">
-                <Parameter name="Combine Values in Overlap"                     type="string" value="Full"/><!--Restricted,Averaging,Full-->
-                <Parameter name="HarmonicOnOverlap"                             type="bool"   value="1"/>
-                <Parameter name="PreSolveStrategy"                              type="string" value="OnOvlp"/><!--OnOverlapping, OnOvlp, OnMultiple-->
+                <Parameter name="Combine Values in Overlap"                     type="string"   value="Full"/><!--Restricted,Averaging,Full-->
+                <Parameter name="HarmonicOnOverlap"                             type="bool"     value="1"/>
+                <Parameter name="PreSolveStrategy"                              type="string"   value="OnOvlp"/><!--OnOverlapping, OnOvlp, OnMultiple-->
                 <Parameter name="Adding Layers Strategy"                        type="string"   value="CrsMatrix"/>
                 <ParameterList name="Solver">
                     <Parameter name="SolverType"                                type="string"   value="Amesos2"/>
