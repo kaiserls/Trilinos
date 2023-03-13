@@ -76,7 +76,7 @@ namespace FROSch {
         } else {
             FROSCH_ASSERT(false,"CoarseOperator Type unkown.");
         } // TODO: Add ability to disable individual levels
-        this->CombinedOperator_->addOperator(CoarseOperator_);
+        this->ComposedOperator_->addOperator(CoarseOperator_);
     }
 
 
@@ -430,7 +430,7 @@ namespace FROSch {
     {
         FROSCH_DETAILTIMER_START_LEVELID(resetMatrixTime,"TwoLevelBlockPreconditioner::resetMatrix");
         this->K_ = k;
-        this->CombinedOperator_->resetMatrix(this->K_);
+        this->ComposedOperator_->resetMatrix(this->K_);
         return 0;
     }
 
@@ -439,7 +439,7 @@ namespace FROSch {
                                                                  XMultiVectorPtr &y)
     {
         FROSCH_DETAILTIMER_START_LEVELID(preApplyCoarseTime,"TwoLevelBlockPreconditioner::preApplyCoarse");
-        this->CombinedOperator_->preApplyCoarse(*x,*y);
+        this->ComposedOperator_->preApplyCoarse(*x,*y);
         return 0;
     }
 

@@ -71,7 +71,7 @@ namespace FROSch {
 
         using ParameterListPtr                  = typename SchwarzPreconditioner<SC,LO,GO,NO>::ParameterListPtr;
 
-        using CombinedOperatorPtr               = typename SchwarzPreconditioner<SC,LO,GO,NO>::CombinedOperatorPtr;
+        using ComposedOperatorPtr               = typename SchwarzPreconditioner<SC,LO,GO,NO>::ComposedOperatorPtr;
         using SumOperatorPtr                    = typename SchwarzPreconditioner<SC,LO,GO,NO>::SumOperatorPtr;
         using MultiplicativeOperatorPtr         = typename SchwarzPreconditioner<SC,LO,GO,NO>::MultiplicativeOperatorPtr;
         using OverlappingOperatorPtr            = typename SchwarzPreconditioner<SC,LO,GO,NO>::OverlappingOperatorPtr;
@@ -117,10 +117,10 @@ namespace FROSch {
 
         ConstXMatrixPtr K_;
 
-        CombinedOperatorPtr CombinedOperator_;  //! Either multiplicative or additive combination of operator on different levels.
+        ComposedOperatorPtr ComposedOperator_;  //! Either multiplicative or additive composition of operator on different levels.
                                                 //! In this preconditioner only one level exists.
         OverlappingOperatorPtr OverlappingOperator_;//! The overlapping schwarz operator on the first level.
-                                                    //! Is also contained in the combined operator.
+                                                    //! Is also contained in the composed operator.
     };
 
 }

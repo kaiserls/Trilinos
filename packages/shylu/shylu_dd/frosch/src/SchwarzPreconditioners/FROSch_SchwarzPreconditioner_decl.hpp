@@ -88,7 +88,7 @@ namespace FROSch {
 
         using ParameterListPtr                    = RCP<ParameterList>;
 
-        using CombinedOperatorPtr                 = RCP<CombinedOperator<SC,LO,GO,NO> >;
+        using ComposedOperatorPtr                 = RCP<ComposedOperator<SC,LO,GO,NO> >;
         using SumOperatorPtr                      = RCP<SumOperator<SC,LO,GO,NO> >;
         using MultiplicativeOperatorPtr           = RCP<MultiplicativeOperator<SC,LO,GO,NO> >;
         using OverlappingOperatorPtr              = RCP<OverlappingOperator<SC,LO,GO,NO> >;

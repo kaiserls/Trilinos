@@ -56,7 +56,7 @@ namespace FROSch {
               class LO = int,
               class GO = DefaultGlobalOrdinal,
               class NO = KokkosClassic::DefaultNode::DefaultNodeType>
-    class CombinedOperator : public SchwarzOperator<SC,LO,GO,NO> {
+    class ComposedOperator : public SchwarzOperator<SC,LO,GO,NO> {
 
     protected:
 
@@ -81,18 +81,18 @@ namespace FROSch {
     public:
         using SchwarzOperator<SC,LO,GO,NO>::SchwarzOperator;
 
-        CombinedOperator(CommPtr comm);
+        ComposedOperator(CommPtr comm);
 
-        CombinedOperator(SchwarzOperatorPtrVecPtr operators);
+        ComposedOperator(SchwarzOperatorPtrVecPtr operators);
 
-        ~CombinedOperator();
+        ~ComposedOperator();
 
         virtual int initialize();
 
         virtual int initialize(ConstXMapPtr repeatedMap);
 
         virtual int compute();
-        //! Apply the CombinedOperator by applying the individual SchwarzOperators and combining them
+        //! Apply the ComposedOperator by applying the individual SchwarzOperators and combining them
         virtual void apply(const XMultiVector &x,
                            XMultiVector &y,
                            bool usePreconditionerOnly,
@@ -127,7 +127,7 @@ namespace FROSch {
         virtual void resetMatrix(ConstXMatrixPtr &k);
 
     protected:
-        //! Vector storing the operators for the different levels which are applied and combined
+        //! Vector storing the operators for the different levels which are applied and composed
         SchwarzOperatorPtrVec OperatorVector_ = SchwarzOperatorPtrVec(0);
 
         //! Temp Vectors for apply()

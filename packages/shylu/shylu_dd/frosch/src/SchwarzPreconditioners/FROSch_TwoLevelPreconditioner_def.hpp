@@ -73,8 +73,8 @@ namespace FROSch {
         } else {
             FROSCH_ASSERT(false,"CoarseOperator Type unkown.");
         } // TODO: Add ability to disable individual levels
-        // Add Coarse operator to the combined operator, the overlapping operator is added in the base class (oneLevel) constructor
-        this->CombinedOperator_->addOperator(CoarseOperator_);
+        // Add Coarse operator to the composed operator, the overlapping operator is added in the base class (oneLevel) constructor
+        this->ComposedOperator_->addOperator(CoarseOperator_);
     }
 
     template <class SC,class LO,class GO,class NO>
@@ -248,7 +248,7 @@ namespace FROSch {
     {
         FROSCH_DETAILTIMER_START_LEVELID(resetMatrixTime,"TwoLevelPreconditioner::resetMatrix");
         this->K_ = k;
-        this->CombinedOperator_->resetMatrix(this->K_);
+        this->ComposedOperator_->resetMatrix(this->K_);
         return 0;
     }
 }

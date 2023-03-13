@@ -60,7 +60,7 @@ namespace FROSch {
               class LO,
               class GO,
               class NO>
-    class CombinedOperator;
+    class ComposedOperator;
 
     template <class SC,
               class LO,

@@ -42,7 +42,7 @@
 #ifndef _FROSCH_SUMOPERATOR_DECL_HPP
 #define _FROSCH_SUMOPERATOR_DECL_HPP
 
-#include <FROSch_CombinedOperator_def.hpp>
+#include <FROSch_ComposedOperator_def.hpp>
 
 
 namespace FROSch {
@@ -56,28 +56,28 @@ namespace FROSch {
               class LO = int,
               class GO = DefaultGlobalOrdinal,
               class NO = KokkosClassic::DefaultNode::DefaultNodeType>
-    class SumOperator : public CombinedOperator<SC,LO,GO,NO> {
+    class SumOperator : public ComposedOperator<SC,LO,GO,NO> {
 
     protected:
 
-        using CommPtr                   = typename CombinedOperator<SC,LO,GO,NO>::CommPtr;
+        using CommPtr                   = typename ComposedOperator<SC,LO,GO,NO>::CommPtr;
 
-        using XMapPtr                   = typename CombinedOperator<SC,LO,GO,NO>::XMapPtr;
+        using XMapPtr                   = typename ComposedOperator<SC,LO,GO,NO>::XMapPtr;
         using ConstXMapPtr              = typename SchwarzOperator<SC,LO,GO,NO>::ConstXMapPtr;
 
-        using XMultiVector              = typename CombinedOperator<SC,LO,GO,NO>::XMultiVector;
-        using XMultiVectorPtr           = typename CombinedOperator<SC,LO,GO,NO>::XMultiVectorPtr;
+        using XMultiVector              = typename ComposedOperator<SC,LO,GO,NO>::XMultiVector;
+        using XMultiVectorPtr           = typename ComposedOperator<SC,LO,GO,NO>::XMultiVectorPtr;
 
-        using SchwarzOperatorPtr        = typename CombinedOperator<SC,LO,GO,NO>::SchwarzOperatorPtr;
-        using SchwarzOperatorPtrVec     = typename CombinedOperator<SC,LO,GO,NO>::SchwarzOperatorPtrVec;
-        using SchwarzOperatorPtrVecPtr  = typename CombinedOperator<SC,LO,GO,NO>::SchwarzOperatorPtrVecPtr;
+        using SchwarzOperatorPtr        = typename ComposedOperator<SC,LO,GO,NO>::SchwarzOperatorPtr;
+        using SchwarzOperatorPtrVec     = typename ComposedOperator<SC,LO,GO,NO>::SchwarzOperatorPtrVec;
+        using SchwarzOperatorPtrVecPtr  = typename ComposedOperator<SC,LO,GO,NO>::SchwarzOperatorPtrVecPtr;
 
-        using UN                        = typename CombinedOperator<SC,LO,GO,NO>::UN;
+        using UN                        = typename ComposedOperator<SC,LO,GO,NO>::UN;
 
-        using BoolVec                   = typename CombinedOperator<SC,LO,GO,NO>::BoolVec;
+        using BoolVec                   = typename ComposedOperator<SC,LO,GO,NO>::BoolVec;
     
     public:
-        using CombinedOperator<SC,LO,GO,NO>::CombinedOperator;
+        using ComposedOperator<SC,LO,GO,NO>::ComposedOperator;
         //! Apply the SumOperator by applying the individual SchwarzOperators and combining the results in an additive manner
         void apply(const XMultiVector &x,
                            XMultiVector &y,

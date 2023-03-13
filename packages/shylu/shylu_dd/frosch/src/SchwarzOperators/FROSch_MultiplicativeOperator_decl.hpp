@@ -42,7 +42,7 @@
 #ifndef _FROSCH_MULTIPLICATIVEOPERATOR_DECL_HPP
 #define _FROSCH_MULTIPLICATIVEOPERATOR_DECL_HPP
 
-#include <FROSch_CombinedOperator_def.hpp>
+#include <FROSch_ComposedOperator_def.hpp>
 
 
 namespace FROSch {
@@ -51,36 +51,36 @@ namespace FROSch {
     using namespace Teuchos;
     using namespace Xpetra;
 
-    //! Multiplicative combination of SchwarzOperators on different levels
+    //! Multiplicative composition of SchwarzOperators
     template <class SC = double,
               class LO = int,
               class GO = DefaultGlobalOrdinal,
               class NO = KokkosClassic::DefaultNode::DefaultNodeType>
-    class MultiplicativeOperator : public CombinedOperator<SC,LO,GO,NO> {
+    class MultiplicativeOperator : public ComposedOperator<SC,LO,GO,NO> {
 
     protected:
 
-        using CommPtr                   = typename CombinedOperator<SC,LO,GO,NO>::CommPtr;
+        using CommPtr                   = typename ComposedOperator<SC,LO,GO,NO>::CommPtr;
 
-        using XMapPtr                   = typename CombinedOperator<SC,LO,GO,NO>::XMapPtr;
-        using ConstXMapPtr              = typename CombinedOperator<SC,LO,GO,NO>::ConstXMapPtr;
+        using XMapPtr                   = typename ComposedOperator<SC,LO,GO,NO>::XMapPtr;
+        using ConstXMapPtr              = typename ComposedOperator<SC,LO,GO,NO>::ConstXMapPtr;
 
-        using XMultiVector              = typename CombinedOperator<SC,LO,GO,NO>::XMultiVector;
-        using XMultiVectorPtr           = typename CombinedOperator<SC,LO,GO,NO>::XMultiVectorPtr;
+        using XMultiVector              = typename ComposedOperator<SC,LO,GO,NO>::XMultiVector;
+        using XMultiVectorPtr           = typename ComposedOperator<SC,LO,GO,NO>::XMultiVectorPtr;
 
-        using SchwarzOperatorPtr        = typename CombinedOperator<SC,LO,GO,NO>::SchwarzOperatorPtr;
-        using SchwarzOperatorPtrVec     = typename CombinedOperator<SC,LO,GO,NO>::SchwarzOperatorPtrVec;
-        using SchwarzOperatorPtrVecPtr  = typename CombinedOperator<SC,LO,GO,NO>::SchwarzOperatorPtrVecPtr;
+        using SchwarzOperatorPtr        = typename ComposedOperator<SC,LO,GO,NO>::SchwarzOperatorPtr;
+        using SchwarzOperatorPtrVec     = typename ComposedOperator<SC,LO,GO,NO>::SchwarzOperatorPtrVec;
+        using SchwarzOperatorPtrVecPtr  = typename ComposedOperator<SC,LO,GO,NO>::SchwarzOperatorPtrVecPtr;
 
-        using UN                        = typename CombinedOperator<SC,LO,GO,NO>::UN;
+        using UN                        = typename ComposedOperator<SC,LO,GO,NO>::UN;
 
-        using BoolVec                   = typename CombinedOperator<SC,LO,GO,NO>::BoolVec;
+        using BoolVec                   = typename ComposedOperator<SC,LO,GO,NO>::BoolVec;
 
-        using ParameterListPtr          = typename CombinedOperator<SC,LO,GO,NO>::ParameterListPtr;
+        using ParameterListPtr          = typename ComposedOperator<SC,LO,GO,NO>::ParameterListPtr;
 
     public:
         //Import the constructors from the base class
-        using CombinedOperator<SC,LO,GO,NO>::CombinedOperator;
+        using ComposedOperator<SC,LO,GO,NO>::ComposedOperator;
 
 
         void preApplyCoarse(XMultiVector &x,

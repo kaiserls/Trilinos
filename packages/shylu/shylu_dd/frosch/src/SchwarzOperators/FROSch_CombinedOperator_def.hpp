@@ -42,7 +42,7 @@
 #ifndef _FROSCH_COMBINEDOPERATOR_DEF_HPP
 #define _FROSCH_COMBINEDOPERATOR_DEF_HPP
 
-#include <FROSch_CombinedOperator_decl.hpp>
+#include <FROSch_ComposedOperator_decl.hpp>
 
 
 namespace FROSch {
@@ -52,17 +52,17 @@ namespace FROSch {
     using namespace Xpetra;
 
     template <class SC,class LO,class GO,class NO>
-    CombinedOperator<SC,LO,GO,NO>::CombinedOperator(CommPtr comm) :
+    ComposedOperator<SC,LO,GO,NO>::ComposedOperator(CommPtr comm) :
     SchwarzOperator<SC,LO,GO,NO> (comm)
     {
-        FROSCH_DETAILTIMER_START_LEVELID(combinedOperatorTime, "CombinedOperator::CombinedOperator");
+        FROSCH_DETAILTIMER_START_LEVELID(composedOperatorTime, "ComposedOperator::ComposedOperator");
     }
 
     template <class SC,class LO,class GO,class NO>
-    CombinedOperator<SC,LO,GO,NO>::CombinedOperator(SchwarzOperatorPtrVecPtr operators) :
+    ComposedOperator<SC,LO,GO,NO>::ComposedOperator(SchwarzOperatorPtrVecPtr operators) :
     SchwarzOperator<SC,LO,GO,NO> (operators[0]->getRangeMap()->getComm())
     {
-        FROSCH_DETAILTIMER_START_LEVELID(combinedOperatorTime, "CombinedOperator::CombinedOperator");
+        FROSCH_DETAILTIMER_START_LEVELID(composedOperatorTime, "ComposedOperator::ComposedOperator");
         FROSCH_ASSERT(operators.size()>0,"operators.size()<=0");
         OperatorVector_.push_back(operators[0]);
         //TODO: Why isn't true pushed to enable operators?
@@ -76,22 +76,13 @@ namespace FROSch {
     }
 
     template <class SC,class LO,class GO,class NO>
-    CombinedOperator<SC,LO,GO,NO>::~CombinedOperator()
+    ComposedOperator<SC,LO,GO,NO>::~ComposedOperator()
     {
 
     }
 
     template <class SC,class LO,class GO,class NO>
-    int CombinedOperator<SC,LO,GO,NO>::initialize()
-    {
-        if (this->Verbose_) {
-            FROSCH_ASSERT(false,"ERROR: Each of the Operators has to be initialized manually.");
-        }
-        return 0;
-    }
-
-    template <class SC,class LO,class GO,class NO>
-    int CombinedOperator<SC,LO,GO,NO>::initialize(ConstXMapPtr repeatedMap)
+    int ComposedOperator<SC,LO,GO,NO>::initialize()
     {
         if (this->Verbose_) {
             FROSCH_ASSERT(false,"ERROR: Each of the Operators has to be initialized manually.");
@@ -100,7 +91,16 @@ namespace FROSch {
     }
 
     template <class SC,class LO,class GO,class NO>
-    int CombinedOperator<SC,LO,GO,NO>::compute()
+    int ComposedOperator<SC,LO,GO,NO>::initialize(ConstXMapPtr repeatedMap)
+    {
+        if (this->Verbose_) {
+            FROSCH_ASSERT(false,"ERROR: Each of the Operators has to be initialized manually.");
+        }
+        return 0;
+    }
+
+    template <class SC,class LO,class GO,class NO>
+    int ComposedOperator<SC,LO,GO,NO>::compute()
     {
         if (this->Verbose_) {
             FROSCH_ASSERT(false,"ERROR: Each of the Operators has to be computed manually.");
@@ -109,28 +109,28 @@ namespace FROSch {
     }
 
     template <class SC,class LO,class GO,class NO>
-    typename CombinedOperator<SC,LO,GO,NO>::ConstXMapPtr CombinedOperator<SC,LO,GO,NO>::getDomainMap() const
+    typename ComposedOperator<SC,LO,GO,NO>::ConstXMapPtr ComposedOperator<SC,LO,GO,NO>::getDomainMap() const
     {
         return OperatorVector_[0]->getDomainMap();
     }
 
     template <class SC,class LO,class GO,class NO>
-    typename CombinedOperator<SC,LO,GO,NO>::ConstXMapPtr CombinedOperator<SC,LO,GO,NO>::getRangeMap() const
+    typename ComposedOperator<SC,LO,GO,NO>::ConstXMapPtr ComposedOperator<SC,LO,GO,NO>::getRangeMap() const
     {
         return OperatorVector_[0]->getRangeMap();
     }
 
     template <class SC,class LO,class GO,class NO>
-    void CombinedOperator<SC,LO,GO,NO>::describe(FancyOStream &out,
+    void ComposedOperator<SC,LO,GO,NO>::describe(FancyOStream &out,
                                             const EVerbosityLevel verbLevel) const
     {
         FROSCH_ASSERT(false,"describe() has to be implemented properly...");
     }
 
     template <class SC,class LO,class GO,class NO>
-    string CombinedOperator<SC,LO,GO,NO>::description() const
+    string ComposedOperator<SC,LO,GO,NO>::description() const
     {
-        string labelString = "CombinedOperator: ";
+        string labelString = "ComposedOperator: ";
 
         for (UN i=0; i<OperatorVector_.size(); i++) {
             labelString += OperatorVector_[i]->description();
@@ -143,18 +143,18 @@ namespace FROSch {
 
     //! Add a SchwarzOperator to the combination
     template <class SC,class LO,class GO,class NO>
-    int CombinedOperator<SC,LO,GO,NO>::addOperator(SchwarzOperatorPtr op)
+    int ComposedOperator<SC,LO,GO,NO>::addOperator(SchwarzOperatorPtr op)
     {
-        FROSCH_DETAILTIMER_START_LEVELID(addOperatorTime, "CombinedOperator::addOperator");
+        FROSCH_DETAILTIMER_START_LEVELID(addOperatorTime, "ComposedOperator::addOperator");
         // Check if the new operator is compatible with the existing one(s).
         int ret = 0;
         if (OperatorVector_.size()>0) {
             if (!op->getDomainMap()->isSameAs(*OperatorVector_[0]->getDomainMap())) {
-                if (this->Verbose_) cerr <<  "CombinedOperator<SC,LO,GO,NO>::addOperator(SchwarzOperatorPtr op)\t\t!op->getDomainMap().isSameAs(OperatorVector_[0]->getDomainMap())\n";
+                if (this->Verbose_) cerr <<  "ComposedOperator<SC,LO,GO,NO>::addOperator(SchwarzOperatorPtr op)\t\t!op->getDomainMap().isSameAs(OperatorVector_[0]->getDomainMap())\n";
                 ret -= 1;
             }
             if (!op->getRangeMap()->isSameAs(*OperatorVector_[0]->getRangeMap())) {
-                if (this->Verbose_) cerr <<  "CombinedOperator<SC,LO,GO,NO>::addOperator(SchwarzOperatorPtr op)\t\t!op->getRangeMap().isSameAs(OperatorVector_[0]->getRangeMap())\n";
+                if (this->Verbose_) cerr <<  "ComposedOperator<SC,LO,GO,NO>::addOperator(SchwarzOperatorPtr op)\t\t!op->getRangeMap().isSameAs(OperatorVector_[0]->getRangeMap())\n";
                 ret -= 10;
             }
         }
@@ -166,9 +166,9 @@ namespace FROSch {
 
     //! Add a vector/list of SchwarzOperators to the combination.
     template <class SC,class LO,class GO,class NO>
-    int CombinedOperator<SC,LO,GO,NO>::addOperators(SchwarzOperatorPtrVecPtr operators)
+    int ComposedOperator<SC,LO,GO,NO>::addOperators(SchwarzOperatorPtrVecPtr operators)
     {
-        FROSCH_DETAILTIMER_START_LEVELID(addOperatorsTime, "CombinedOperator::addOperators");
+        FROSCH_DETAILTIMER_START_LEVELID(addOperatorsTime, "ComposedOperator::addOperators");
         int ret = 0;
         for (UN i=1; i<operators.size(); i++) {
             if (0>addOperator(operators[i])) ret -= pow(10,i);//Injective encoding of error value to added operator
@@ -178,18 +178,18 @@ namespace FROSch {
 
     //! Replace a SchwarzOperator with specific id.
     template <class SC,class LO,class GO,class NO>
-    int CombinedOperator<SC,LO,GO,NO>::resetOperator(UN iD,
+    int ComposedOperator<SC,LO,GO,NO>::resetOperator(UN iD,
                                                 SchwarzOperatorPtr op)
     {
-        FROSCH_DETAILTIMER_START_LEVELID(resetOperatorTime, "CombinedOperator::resetOperator");
+        FROSCH_DETAILTIMER_START_LEVELID(resetOperatorTime, "ComposedOperator::resetOperator");
         FROSCH_ASSERT(iD<OperatorVector_.size(),"iD exceeds the length of the OperatorVector_");
         int ret = 0;
         if (!op->getDomainMap().isSameAs(OperatorVector_[0]->getDomainMap())) {
-            if (this->Verbose_) cerr <<  "CombinedOperator<SC,LO,GO,NO>::addOperator(SchwarzOperatorPtr op)\t\t!op->getDomainMap().isSameAs(OperatorVector_[0]->getDomainMap())\n";
+            if (this->Verbose_) cerr <<  "ComposedOperator<SC,LO,GO,NO>::addOperator(SchwarzOperatorPtr op)\t\t!op->getDomainMap().isSameAs(OperatorVector_[0]->getDomainMap())\n";
             ret -= 1;
         }
         if (!op->getRangeMap().isSameAs(OperatorVector_[0]->getRangeMap())) {
-            if (this->Verbose_) cerr <<  "CombinedOperator<SC,LO,GO,NO>::addOperator(SchwarzOperatorPtr op)\t\t!op->getRangeMap().isSameAs(OperatorVector_[0]->getRangeMap())\n";
+            if (this->Verbose_) cerr <<  "ComposedOperator<SC,LO,GO,NO>::addOperator(SchwarzOperatorPtr op)\t\t!op->getRangeMap().isSameAs(OperatorVector_[0]->getRangeMap())\n";
             ret -= 10;
         }
         OperatorVector_[iD] = op;
@@ -199,17 +199,17 @@ namespace FROSch {
     //! Set the status of a SchwarzOperator with specific id.
     //! Disabled operators will be skipped in apply.
     template <class SC,class LO,class GO,class NO>
-    int CombinedOperator<SC,LO,GO,NO>::enableOperator(UN iD,
+    int ComposedOperator<SC,LO,GO,NO>::enableOperator(UN iD,
                                                  bool enable)
     {
-        FROSCH_DETAILTIMER_START_LEVELID(enableOperatorTime, "CombinedOperator::enableOperator");
+        FROSCH_DETAILTIMER_START_LEVELID(enableOperatorTime, "ComposedOperator::enableOperator");
         EnableOperators_[iD] = enable;
         return 0;
     }
 
-    //! Returns the number of individual SchwarzOperators combined in this operator
+    //! Returns the number of individual SchwarzOperators composed in this operator
     template <class SC,class LO,class GO,class NO>
-    typename CombinedOperator<SC,LO,GO,NO>::UN CombinedOperator<SC,LO,GO,NO>::getNumOperators()
+    typename ComposedOperator<SC,LO,GO,NO>::UN ComposedOperator<SC,LO,GO,NO>::getNumOperators()
     {
         return OperatorVector_.size();
     }
@@ -218,15 +218,15 @@ namespace FROSch {
     //TODO: Results in an symmetric operator for a one-level preconditioner???
     //! Why is this not handled by adding the OperatorPtr to the vector againg?
     template <class SC,class LO,class GO,class NO>
-    void CombinedOperator<SC,LO,GO,NO>::preApplyCoarse(XMultiVector &x,
+    void ComposedOperator<SC,LO,GO,NO>::preApplyCoarse(XMultiVector &x,
                                 XMultiVector &y) 
     {
         FROSCH_ASSERT(false,"preApplyCoarse(XMultiVectorPtr &x) only implemented for MultiplicativeOperator.")
     }
     
-    //! Reset matrix for the combined operator and all operators contained in the OperatorVector
+    //! Reset matrix for the composed operator and all operators contained in the OperatorVector
     template <class SC,class LO,class GO,class NO>
-    void CombinedOperator<SC,LO,GO,NO>::resetMatrix(ConstXMatrixPtr &k)
+    void ComposedOperator<SC,LO,GO,NO>::resetMatrix(ConstXMatrixPtr &k)
     {
         SchwarzOperator<SC,LO,GO,NO>::resetMatrix(k);
         for (UN i=1; i<OperatorVector_.size(); i++) {
