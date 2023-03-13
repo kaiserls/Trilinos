@@ -105,7 +105,7 @@ namespace FROSch {
         using SolverFactoryPtr      = typename SchwarzOperator<SC,LO,GO,NO>::SolverFactoryPtr;
 
         using MapperPtr             = RCP<Mapper<SC,LO,GO,NO>>;
-        using CombinationType       = typename Mapper<SC,LO,GO,NO>::CombinationType;
+        using OverlapCombinationType= typename Mapper<SC,LO,GO,NO>::OverlapCombinationType;
 
     public:
 

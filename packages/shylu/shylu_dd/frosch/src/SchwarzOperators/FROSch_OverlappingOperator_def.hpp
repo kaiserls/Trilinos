@@ -58,11 +58,11 @@ namespace FROSch {
     {
         FROSCH_DETAILTIMER_START_LEVELID(overlappingOperatorTime,"OverlappingOperator::OverlappingOperator");
         if (!this->ParameterList_->get("Combine Values in Overlap","Restricted").compare("Averaging")) {
-            Combine_ = CombinationType::Averaging;
+            Combine_ = OverlapCombinationType::Averaging;
         } else if (!this->ParameterList_->get("Combine Values in Overlap","Restricted").compare("Full")) {
-            Combine_ = CombinationType::Full;
+            Combine_ = OverlapCombinationType::Full;
         } else if (!this->ParameterList_->get("Combine Values in Overlap","Restricted").compare("Restricted")) {
-            Combine_ = CombinationType::Restricted;
+            Combine_ = OverlapCombinationType::Restricted;
         }
     }
 
@@ -145,7 +145,7 @@ namespace FROSch {
         FROSCH_DETAILTIMER_START_LEVELID(initializeOverlappingOperatorTime,"OverlappingOperator::initializeOverlappingOperator");
         Scatter_ = ImportFactory<LO,GO,NO>::Build(this->getDomainMap(),OverlappingMap_);
         // Calculate multiplicity if needed
-        if (Combine_ == CombinationType::Averaging) {
+        if (Combine_ == OverlapCombinationType::Averaging) {
             calculateMultiplicity();
         }
         Mapper_= rcp(new Mapper<SC,LO,GO,NO>(this->getDomainMap(),OverlappingMap_, Multiplicity_, Combine_));

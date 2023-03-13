@@ -58,9 +58,9 @@ namespace FROSch {
     {
         HarmonicOnOverlap_ = this->ParameterList_->get("HarmonicOnOverlap",false); //Allows to use the debugging output only implemented in this class without using harmonic overlap
         if(HarmonicOnOverlap_){
-            FROSCH_ASSERT(this->Combine_ != CombinationType::Averaging, "HarmonicOnOverlap cannot be used with CombinationType==Averaging")
-            if(this->Combine_ == CombinationType::Restricted){ //Rasho is implemented more like a fully additive operator internally, only the node sets are "restricted"
-                this->Combine_ = CombinationType::Full;
+            FROSCH_ASSERT(this->Combine_ != OverlapCombinationType::Averaging, "HarmonicOnOverlap cannot be used with OverlapCombinationType==Averaging")
+            if(this->Combine_ == OverlapCombinationType::Restricted){ //Rasho is implemented more like a fully additive operator internally, only the node sets are "restricted"
+                this->Combine_ = OverlapCombinationType::Full;
                 this->Rasho_ = true;
             }
             auto preSolveStrategyString = this->ParameterList_->get("PreSolveStrategy","OnOvlp");
@@ -107,7 +107,7 @@ namespace FROSch {
                                                        // e. g. if the overlappingMatrix is constructed with the overlappingMap but now we redefine the map
                                                        // Also the multiplicity needs to calculated before this or could get messes up???
             
-            PreSolveMapper_ = rcp(new Mapper<SC,LO,GO,NO>(UniqueMap_, PreSolveMap_, PreSolveMap_, PreSolveMap_, this->Multiplicity_, CombinationType::Restricted));
+            PreSolveMapper_ = rcp(new Mapper<SC,LO,GO,NO>(UniqueMap_, PreSolveMap_, PreSolveMap_, PreSolveMap_, this->Multiplicity_, OverlapCombinationType::Restricted));
             ResidualMapper_ = rcp(new Mapper<SC,LO,GO,NO>(UniqueMap_, this->OverlappingMap_, ResidualMap_, ResidualMap_, this->Multiplicity_, this->Combine_));
 
             UniqueToResidualMapper_ = rcp(new Mapper<SC,LO,GO,NO>(UniqueMap_, ResidualMap_, ResidualMap_, ResidualMap_, this->Multiplicity_, this->Combine_));

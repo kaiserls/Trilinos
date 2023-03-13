@@ -86,7 +86,7 @@ namespace FROSch {
         using UN                    = typename SchwarzOperator<SC,LO,GO,NO>::UN;
         
         using MapperPtr             = RCP<Mapper<SC,LO,GO,NO>>;
-        using CombinationType       = typename Mapper<SC,LO,GO,NO>::CombinationType;
+        using OverlapCombinationType= typename Mapper<SC,LO,GO,NO>::OverlapCombinationType;
 
     public:
         using SchwarzOperator<SC,LO,GO,NO>::apply;
@@ -136,7 +136,7 @@ namespace FROSch {
 
         XMultiVectorPtr Multiplicity_; //! Stores in how many domains each node is contained.
 
-        CombinationType Combine_ = CombinationType::Averaging;
+        OverlapCombinationType Combine_ = OverlapCombinationType::Averaging;
 
         MapperPtr Mapper_;
     };

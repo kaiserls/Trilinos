@@ -53,7 +53,7 @@ namespace FROSch {
 
     //TODO: Think about how to make this work in both cases, maybe two classes? Simple and complex mapper?
     template <class SC,class LO,class GO,class NO>
-    Mapper<SC,LO,GO,NO>::Mapper(ConstXMapPtr uniqueMap, ConstXMapPtr overlappingMap, XMultiVectorPtr  multiplicity, CombinationType combine)
+    Mapper<SC,LO,GO,NO>::Mapper(ConstXMapPtr uniqueMap, ConstXMapPtr overlappingMap, XMultiVectorPtr  multiplicity, OverlapCombinationType combine)
     : UniqueMap_(uniqueMap), OverlappingMap_(overlappingMap), Multiplicity_(multiplicity), Combine_(combine) //inherit from describeable?
     {
         RCP<const Comm<LO> > serialComm = rcp(new MpiComm<LO>(MPI_COMM_SELF));
@@ -62,7 +62,7 @@ namespace FROSch {
     }
 
     template <class SC,class LO,class GO,class NO>
-    Mapper<SC,LO,GO,NO>::Mapper(ConstXMapPtr uniqueMap, ConstXMapPtr overlappingMap, ConstXMapPtr importMap, ConstXMapPtr exportMap, XMultiVectorPtr multiplicity, CombinationType combine)
+    Mapper<SC,LO,GO,NO>::Mapper(ConstXMapPtr uniqueMap, ConstXMapPtr overlappingMap, ConstXMapPtr importMap, ConstXMapPtr exportMap, XMultiVectorPtr multiplicity, OverlapCombinationType combine)
     : UniqueMap_(uniqueMap), OverlappingMap_(overlappingMap), ImportMap_(importMap), ExportMap_(exportMap), Multiplicity_(multiplicity), Combine_(combine)
     {
         RCP<const Comm<LO> > serialComm = rcp(new MpiComm<LO>(MPI_COMM_SELF));

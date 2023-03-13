@@ -73,10 +73,10 @@ namespace FROSch {
         using UN                    = unsigned;
 
     public:
-        enum CombinationType {Averaging,Full,Restricted};
+        enum OverlapCombinationType {Averaging,Full,Restricted};
 
-        Mapper(ConstXMapPtr uniqueMap, ConstXMapPtr overlappingMap, ConstXMapPtr importMap, ConstXMapPtr exportMap, XMultiVectorPtr multiplicity, CombinationType combine);
-        Mapper(ConstXMapPtr uniqueMap, ConstXMapPtr overlappingMap, XMultiVectorPtr multiplicity, CombinationType combine);
+        Mapper(ConstXMapPtr uniqueMap, ConstXMapPtr overlappingMap, ConstXMapPtr importMap, ConstXMapPtr exportMap, XMultiVectorPtr multiplicity, OverlapCombinationType combine);
+        Mapper(ConstXMapPtr uniqueMap, ConstXMapPtr overlappingMap, XMultiVectorPtr multiplicity, OverlapCombinationType combine);
 
         virtual ~Mapper();
 
@@ -103,7 +103,7 @@ namespace FROSch {
         XExportPtr Export_;//TODO: usefull for rasho?
 
         XMultiVectorPtr Multiplicity_;//TODO: Move to averagesubclass
-        CombinationType Combine_;
+        OverlapCombinationType Combine_;
 
         mutable XMultiVectorPtr XOverlapTmp_;
     };
